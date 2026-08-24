@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+websockets
+pydantic
+google-generativeai
+python-dotenv
+tensorflow
+joblib
+librosa
+opencv-python
+numpy
+scikit-learn
