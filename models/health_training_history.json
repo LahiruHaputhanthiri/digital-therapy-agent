@@ -1,0 +1,161 @@
+{
+  "dataset_path": "D:\\ICBT\\Final\\Data set\\archive (2)\\student_health_dataset_50k.csv",
+  "total_samples": 50000,
+  "features": [
+    "sleep_duration",
+    "heart_rate",
+    "bmi",
+    "calorie_expenditure",
+    "step_count",
+    "exercise_duration",
+    "water_intake",
+    "diet_type",
+    "stress_level",
+    "sleep_quality",
+    "physical_activity_level",
+    "smoking_alcohol",
+    "gender"
+  ],
+  "target": "health_condition",
+  "target_classes": [
+    "at-risk",
+    "fit",
+    "unhealthy"
+  ],
+  "target_mapping": {
+    "at-risk": 0,
+    "fit": 1,
+    "unhealthy": 2
+  },
+  "baseline_metrics": {
+    "accuracy": 1.0,
+    "balanced_accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0
+  },
+  "optimized_metrics": {
+    "accuracy": 1.0,
+    "balanced_accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0
+  },
+  "grid_search": {
+    "best_params": {
+      "classifier__max_depth": null,
+      "classifier__max_features": "sqrt",
+      "classifier__min_samples_leaf": 1,
+      "classifier__min_samples_split": 2,
+      "classifier__n_estimators": 100
+    },
+    "best_cv_score": 1.0,
+    "cv_folds": 5,
+    "total_fits": 360,
+    "duration_seconds": 269.6595742702484
+  },
+  "feature_importances": [
+    {
+      "Feature": "stress_level",
+      "Importance": 0.4840937526059832
+    },
+    {
+      "Feature": "sleep_duration",
+      "Importance": 0.3532541884073989
+    },
+    {
+      "Feature": "physical_activity_level",
+      "Importance": 0.10069964872407626
+    },
+    {
+      "Feature": "calorie_expenditure",
+      "Importance": 0.009535267215495606
+    },
+    {
+      "Feature": "step_count",
+      "Importance": 0.009496154119392398
+    },
+    {
+      "Feature": "exercise_duration",
+      "Importance": 0.009324495366364406
+    },
+    {
+      "Feature": "water_intake",
+      "Importance": 0.008917191778551105
+    },
+    {
+      "Feature": "heart_rate",
+      "Importance": 0.008607261706094741
+    },
+    {
+      "Feature": "bmi",
+      "Importance": 0.008434130774391627
+    },
+    {
+      "Feature": "diet_type",
+      "Importance": 0.001951212412998532
+    },
+    {
+      "Feature": "gender",
+      "Importance": 0.001923724375619339
+    },
+    {
+      "Feature": "smoking_alcohol",
+      "Importance": 0.0019089355461634422
+    },
+    {
+      "Feature": "sleep_quality",
+      "Importance": 0.0018540369674704263
+    }
+  ],
+  "classification_report": {
+    "at-risk": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 8744.0
+    },
+    "fit": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 493.0
+    },
+    "unhealthy": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 763.0
+    },
+    "accuracy": 1.0,
+    "macro avg": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 10000.0
+    },
+    "weighted avg": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 10000.0
+    }
+  },
+  "confusion_matrix": [
+    [
+      8744,
+      0,
+      0
+    ],
+    [
+      0,
+      493,
+      0
+    ],
+    [
+      0,
+      0,
+      763
+    ]
+  ]
+}

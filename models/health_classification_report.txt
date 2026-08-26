@@ -1,0 +1,9 @@
+              precision    recall  f1-score   support
+
+     at-risk     1.0000    1.0000    1.0000      8744
+         fit     1.0000    1.0000    1.0000       493
+   unhealthy     1.0000    1.0000    1.0000       763
+
+    accuracy                         1.0000     10000
+   macro avg     1.0000    1.0000    1.0000     10000
+weighted avg     1.0000    1.0000    1.0000     10000
