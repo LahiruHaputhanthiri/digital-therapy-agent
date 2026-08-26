@@ -7,6 +7,11 @@ python-dotenv
 tensorflow
 joblib
 librosa
+soundfile
+pydub
+av
 opencv-python
 numpy
 scikit-learn
+gtts
+edge-tts

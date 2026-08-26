@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 
 export interface AudioRecorderProps {
   isRecording: boolean;
+  isFinishing?: boolean;
   recordingDuration: number;
   audioVolume: number; // 0 - 100
   onStart: () => void;
@@ -21,6 +22,7 @@ export interface AudioRecorderProps {
  */
 export function AudioRecorder({
   isRecording,
+  isFinishing = false,
   recordingDuration,
   audioVolume,
   onStart,
@@ -49,16 +51,34 @@ export function AudioRecorder({
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
-          className="flex items-center gap-2.5 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/60 px-3 py-1.5 shadow-sm"
+          className={`flex items-center gap-2.5 rounded-2xl border px-3 py-1.5 shadow-sm transition-colors duration-200 ${
+            isFinishing
+              ? 'bg-amber-50 dark:bg-amber-950/50 border-amber-300 dark:border-amber-800/70'
+              : 'bg-rose-50 dark:bg-rose-950/50 border-rose-200 dark:border-rose-900/60'
+          }`}
         >
           {/* Pulsing Recording Indicator */}
           <div className="flex items-center gap-1.5">
             <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-600" />
+              <span
+                className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                  isFinishing ? 'bg-amber-400' : 'bg-rose-400'
+                }`}
+              />
+              <span
+                className={`relative inline-flex rounded-full h-2.5 w-2.5 ${
+                  isFinishing ? 'bg-amber-600' : 'bg-rose-600'
+                }`}
+              />
             </span>
-            <span className="font-mono text-xs font-bold text-rose-700 dark:text-rose-300">
-              {formatDuration(recordingDuration)}
+            <span
+              className={`font-mono text-xs font-bold ${
+                isFinishing
+                  ? 'text-amber-700 dark:text-amber-300'
+                  : 'text-rose-700 dark:text-rose-300'
+              }`}
+            >
+              {isFinishing ? 'Finishing...' : formatDuration(recordingDuration)}
             </span>
           </div>
 
@@ -67,7 +87,11 @@ export function AudioRecorder({
             {[0, 1, 2, 3, 4].map((bar) => (
               <motion.span
                 key={bar}
-                className="w-1 rounded-full bg-rose-500 dark:bg-rose-400"
+                className={`w-1 rounded-full ${
+                  isFinishing
+                    ? 'bg-amber-500 dark:bg-amber-400'
+                    : 'bg-rose-500 dark:bg-rose-400'
+                }`}
                 animate={{ height: getBarHeight(bar) }}
                 transition={{ duration: 0.1, ease: 'linear' }}
               />
@@ -91,7 +115,11 @@ export function AudioRecorder({
             size="sm"
             variant="destructive"
             onClick={onStop}
-            className="h-7 text-xs px-2.5 gap-1 rounded-xl bg-rose-600 hover:bg-rose-700 text-white shadow-xs"
+            className={`h-7 text-xs px-2.5 gap-1 rounded-xl text-white shadow-xs transition-colors ${
+              isFinishing
+                ? 'bg-amber-600 hover:bg-amber-700'
+                : 'bg-rose-600 hover:bg-rose-700'
+            }`}
           >
             <Square className="h-3 w-3 fill-current" />
             Done

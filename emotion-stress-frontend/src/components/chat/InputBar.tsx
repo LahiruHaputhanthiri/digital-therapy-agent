@@ -9,12 +9,13 @@ import { useKeystrokeTracker } from '@/hooks/useKeystrokeTracker';
 import { useMediaDevices } from '@/hooks/useMediaDevices';
 import { useStressStore } from '@/store/useStressStore';
 import { useTranslation } from '@/locales';
+import { stopTTS } from '@/utils/tts';
 
 export interface InputBarProps {
   /** Called with the message text (and optional audio metrics) when the user submits. */
   onSendMessage: (
     text: string,
-    audioMetrics?: { volumeDb: number; recordingDurationSeconds: number }
+    audioMetrics?: { audio?: string; volumeDb: number; recordingDurationSeconds: number }
   ) => void;
   /** Disables input while the AI is generating a response. */
   disabled?: boolean;
@@ -59,6 +60,9 @@ export function InputBar({ onSendMessage, disabled }: InputBarProps) {
   const handleSend = () => {
     if (!inputText.trim() || disabled) return;
 
+    // Immediately stop any active AI therapist speech
+    stopTTS();
+
     onSendMessage(inputText.trim());
     setInputText('');
     resetMetrics();
@@ -91,24 +95,41 @@ export function InputBar({ onSendMessage, disabled }: InputBarProps) {
     }
   };
 
-  const handleAudioStart = () => {
-    if (!privacyConsent.allowMicrophone) {
-      setShowMicConsent(true);
-    } else {
-      startAudioRecording();
-    }
-  };
+  /** Called when user finishes a voice message — packages audio payload and sends */
+  const handleAudioComplete = async () => {
+    const result = await stopAudioRecording();
+    if (!result.base64Audio) return;
 
-  /** Called when user finishes a voice message — packages audio metrics and sends */
-  const handleAudioComplete = () => {
-    const duration = mediaStatus.recordingDuration;
-    const volume = mediaStatus.audioVolume;
-    stopAudioRecording();
+    const duration = result.duration || mediaStatus.recordingDuration;
+    const volume = result.volume || mediaStatus.audioVolume;
 
-    onSendMessage(`[${t.chat.voiceMessageSent} — ${duration}s, level: ${volume}%]`, {
+    onSendMessage('', {
+      audio: result.base64Audio,
       volumeDb: volume,
       recordingDurationSeconds: duration,
     });
+  };
+
+  const handleAudioStart = () => {
+    // Critical UX requirement: Immediately cancel AI speech when user taps microphone
+    stopTTS();
+
+    if (!privacyConsent.allowMicrophone) {
+      setShowMicConsent(true);
+    } else {
+      startAudioRecording((result) => {
+        // Automatic silence auto-stop handler
+        if (result.base64Audio) {
+          const duration = result.duration || mediaStatus.recordingDuration;
+          const volume = result.volume || mediaStatus.audioVolume;
+          onSendMessage('', {
+            audio: result.base64Audio,
+            volumeDb: volume,
+            recordingDurationSeconds: duration,
+          });
+        }
+      });
+    }
   };
 
   return (
@@ -141,9 +162,10 @@ export function InputBar({ onSendMessage, disabled }: InputBarProps) {
             )}
           </button>
 
-          {/* Audio Recorder with animated waveform */}
+          {/* Audio Recorder with animated waveform & silence auto-stop */}
           <AudioRecorder
             isRecording={mediaStatus.isAudioRecording}
+            isFinishing={mediaStatus.isSilenceFinishing}
             recordingDuration={mediaStatus.recordingDuration}
             audioVolume={mediaStatus.audioVolume}
             onStart={handleAudioStart}

@@ -49,13 +49,38 @@
   }
 }
 
+@theme {
+  --font-sans: var(--font-geist-sans), var(--font-noto-sans-sinhala), var(--font-noto-sans-tamil), 'Noto Sans Sinhala', 'Iskoola Pota', 'Malithi Web', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-sinhala: var(--font-noto-sans-sinhala), 'Noto Sans Sinhala', 'Iskoola Pota', 'Malithi Web', 'FMAbhaya', sans-serif;
+  --font-tamil: var(--font-noto-sans-tamil), 'Noto Sans Tamil', 'Latha', 'Vijaya', sans-serif;
+}
+
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), var(--font-noto-sans-sinhala), var(--font-noto-sans-tamil), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-geist-sans), var(--font-noto-sans-sinhala), var(--font-noto-sans-tamil), 'Noto Sans Sinhala', 'Iskoola Pota', 'Malithi Web', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-feature-settings: "rlig" 1, "calt" 1;
   transition: background-color 0.25s ease, color 0.25s ease;
   overflow-x: hidden;
+}
+
+/* Specific styling for Sinhala Unicode scripts to prevent broken combining marks, overlapping accents, or clipped descenders */
+[lang="si"], :lang(si), .font-sinhala, .sinhala-text {
+  font-family: var(--font-noto-sans-sinhala), 'Noto Sans Sinhala', 'Iskoola Pota', 'Malithi Web', sans-serif;
+  line-height: 1.8;
+  letter-spacing: 0.01em;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+[lang="ta"], :lang(ta), .font-tamil, .tamil-text {
+  font-family: var(--font-noto-sans-tamil), 'Noto Sans Tamil', 'Latha', 'Vijaya', sans-serif;
+  line-height: 1.7;
+  letter-spacing: 0.01em;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Glassmorphic panels */

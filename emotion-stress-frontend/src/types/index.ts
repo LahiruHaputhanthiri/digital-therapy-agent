@@ -64,15 +64,18 @@ export interface FacialSignalMetrics {
 export interface MultimodalPayload {
   sessionId: string;
   timestamp: string;
+  language?: Language;
   text?: string;
   modalities: ModalityAvailability;
   keystrokeFeatures?: Partial<KeystrokeMetrics>;
-  audioFeatures?: Partial<AudioSignalMetrics>;
-  videoFeatures?: Partial<FacialSignalMetrics>;
+  audioFeatures?: Partial<AudioSignalMetrics> & { audio?: string };
+  videoFeatures?: Partial<FacialSignalMetrics> & { image?: string };
+  healthFeatures?: { stressLevel?: number; heartRate?: number; steps?: number };
   historicalContext?: {
     avgWeeklyStress: number;
     dominantRecentMood: string;
   };
+  history?: Array<{ sender: 'user' | 'assistant' | 'system'; content: string }>;
 }
 
 export interface MessageAudio {
@@ -192,6 +195,7 @@ export type ServerMessage =
       type: 'AI_REPLY';
       messageId: string;
       replyText: string;
+      transcription?: string;
       suggestedAction?: InterventionType;
       activeModalities?: ModalityAvailability;
       stressSnapshot?: { score: number; level: StressLevel };

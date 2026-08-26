@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
   Shield,
   Sparkles,
@@ -10,6 +10,9 @@ import {
   Keyboard,
   Text,
   History,
+  Volume2,
+  VolumeX,
+  Square,
 } from 'lucide-react';
 import { MessageBubble } from '@/components/chat/MessageBubble';
 import { TypingIndicator } from '@/components/chat/TypingIndicator';
@@ -22,6 +25,7 @@ import { Badge } from '@/components/ui/badge';
 import { useStressStore } from '@/store/useStressStore';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useTranslation } from '@/locales';
+import { playTTS, stopTTS } from '@/utils/tts';
 
 /**
  * Modality badge configuration — maps modality keys to display metadata.
@@ -58,10 +62,11 @@ const MODALITY_META: Record<
 };
 
 /**
- * ChatWindow - Phase 4 Chat Interface with Bilingual Support
+ * ChatWindow - Phase 4 Chat Interface with Bilingual Support & TTS
  * Complete conversation container providing:
  * - Sticky header with assistant identity, connection status, modality indicator badges, and session stress badge
  * - Auto-scrolling message list with SafetyBanner and inline therapeutic intervention panels
+ * - Native Web Speech API Text-to-Speech playback for new assistant messages
  * - Footer with stress-adaptive QuickSuggestions and full-featured InputBar
  */
 export function ChatWindow() {
@@ -70,17 +75,61 @@ export function ChatWindow() {
   const activeIntervention = useStressStore((state) => state.activeIntervention);
   const activeModalities = useStressStore((state) => state.activeModalities);
   const stressEstimate = useStressStore((state) => state.stressEstimate);
+  const isTtsEnabled = useStressStore((state) => state.isTtsEnabled);
+  const toggleTts = useStressStore((state) => state.toggleTts);
+  const language = useStressStore((state) => state.language);
   const { status: wsStatus, sendMultimodalTurn } = useWebSocket();
   const { t } = useTranslation();
 
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const scrollBottomRef = useRef<HTMLDivElement | null>(null);
+  const processedMessageIdsRef = useRef<Set<string>>(new Set());
+  const hasInitializedRef = useRef<boolean>(false);
 
   // Auto-scroll to bottom on new messages, typing state, or intervention change
   useEffect(() => {
     scrollBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isAiTyping, activeIntervention]);
 
+  // Record initial messages so existing history is never read aloud on load
+  useEffect(() => {
+    if (!hasInitializedRef.current) {
+      messages.forEach((m) => processedMessageIdsRef.current.add(m.id));
+      hasInitializedRef.current = true;
+    }
+  }, []);
+
+  // Trigger TTS only when a NEW assistant message arrives
+  useEffect(() => {
+    if (!hasInitializedRef.current) return;
+
+    const lastMessage = messages[messages.length - 1];
+    if (
+      lastMessage &&
+      lastMessage.sender === 'assistant' &&
+      !processedMessageIdsRef.current.has(lastMessage.id)
+    ) {
+      processedMessageIdsRef.current.add(lastMessage.id);
+
+      if (isTtsEnabled && lastMessage.content) {
+        playTTS(lastMessage.content, language, {
+          onStart: () => setIsSpeaking(true),
+          onEnd: () => setIsSpeaking(false),
+          onError: () => setIsSpeaking(false),
+        });
+      }
+    }
+  }, [messages, isTtsEnabled, language]);
+
+  // Clean up any ongoing TTS when ChatWindow unmounts
+  useEffect(() => {
+    return () => {
+      stopTTS();
+    };
+  }, []);
+
   const handleSuggestionSelect = (prompt: string) => {
+    stopTTS();
     sendMultimodalTurn(prompt);
   };
 
@@ -121,7 +170,7 @@ export function ChatWindow() {
           </div>
         </div>
 
-        {/* Header Badges: Modalities + Connection + Stress */}
+        {/* Header Badges: Modalities + TTS Toggle + Connection + Stress */}
         <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
           {/* Active Modality Indicator Badges */}
           {activeModalityKeys.map((key) => {
@@ -139,6 +188,57 @@ export function ChatWindow() {
               </div>
             );
           })}
+
+          {/* Voice Response Toggle / Stop Audio Button */}
+          <button
+            type="button"
+            onClick={() => {
+              if (isSpeaking) {
+                stopTTS();
+                setIsSpeaking(false);
+              } else {
+                toggleTts();
+              }
+            }}
+            title={
+              isSpeaking
+                ? 'Stop voice playback'
+                : isTtsEnabled
+                ? 'Voice Responses On (Click to Mute)'
+                : 'Voice Responses Off (Click to Enable)'
+            }
+            aria-label={
+              isSpeaking
+                ? 'Stop voice playback'
+                : isTtsEnabled
+                ? 'Voice Responses On'
+                : 'Voice Responses Off'
+            }
+            className={`flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border transition-colors cursor-pointer ${
+              isSpeaking
+                ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/70 dark:text-rose-300 border-rose-300 dark:border-rose-800 animate-pulse'
+                : isTtsEnabled
+                ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border-blue-200 dark:border-blue-800 hover:bg-blue-100'
+                : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-200/70'
+            }`}
+          >
+            {isSpeaking ? (
+              <>
+                <Square className="h-2.5 w-2.5 fill-current" />
+                <span>Stop Voice</span>
+              </>
+            ) : isTtsEnabled ? (
+              <>
+                <Volume2 className="h-2.5 w-2.5 text-blue-600 dark:text-blue-400" />
+                <span className="hidden sm:inline">Voice On</span>
+              </>
+            ) : (
+              <>
+                <VolumeX className="h-2.5 w-2.5 text-slate-400" />
+                <span className="hidden sm:inline">Voice Off</span>
+              </>
+            )}
+          </button>
 
           {/* Stress Level Badge */}
           <Badge

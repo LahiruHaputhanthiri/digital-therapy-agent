@@ -1,11 +1,13 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Bot, User, Info, Mic, Camera, Keyboard, Wind, Sparkles, Phone } from 'lucide-react';
+import { Bot, User, Info, Mic, Camera, Keyboard, Wind, Sparkles, Phone, Volume2, Square } from 'lucide-react';
 import { Message, InterventionType } from '@/types';
 import { formatTime, cn } from '@/lib/utils';
 import { useStressStore } from '@/store/useStressStore';
+import { GraphemeTypewriter } from '@/components/chat/GraphemeTypewriter';
+import { playTTS, stopTTS } from '@/utils/tts';
 
 export interface MessageBubbleProps {
   message: Message;
@@ -79,6 +81,22 @@ export function MessageBubble({ message }: MessageBubbleProps) {
   const isUser = message.sender === 'user';
   const isSystem = message.sender === 'system';
 
+  const language = useStressStore((state) => state.language);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const handleToggleSpeech = () => {
+    if (isPlaying) {
+      stopTTS();
+      setIsPlaying(false);
+    } else {
+      playTTS(message.content, language, {
+        onStart: () => setIsPlaying(true),
+        onEnd: () => setIsPlaying(false),
+        onError: () => setIsPlaying(false),
+      });
+    }
+  };
+
   // --- System messages: centered informational strip ---
   if (isSystem) {
     return (
@@ -129,7 +147,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
               : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-tl-xs border border-slate-200/80 dark:border-slate-700/80'
           )}
         >
-          <p className="whitespace-pre-wrap select-text">{message.content}</p>
+          <GraphemeTypewriter text={message.content} />
         </div>
 
         {/* Suggested Action Quick-Action Chip (Assistant only) */}
@@ -151,6 +169,33 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           <span suppressHydrationWarning className="tabular-nums">
             {formatTime(message.timestamp)}
           </span>
+
+          {/* TTS Speaker Play/Stop Button for Assistant Messages */}
+          {isAssistant && message.content && (
+            <button
+              type="button"
+              onClick={handleToggleSpeech}
+              title={isPlaying ? 'Stop speaking this response' : 'Listen to this response'}
+              aria-label={isPlaying ? 'Stop speaking this response' : 'Listen to this response'}
+              className={`inline-flex items-center gap-0.5 px-1 py-0.5 rounded-md text-[10px] transition-colors cursor-pointer ${
+                isPlaying
+                  ? 'text-rose-600 bg-rose-50 dark:bg-rose-950/60 dark:text-rose-300 font-medium'
+                  : 'text-slate-400 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-blue-400'
+              }`}
+            >
+              {isPlaying ? (
+                <>
+                  <Square className="h-2.5 w-2.5 fill-current animate-pulse" />
+                  <span>Stop</span>
+                </>
+              ) : (
+                <>
+                  <Volume2 className="h-2.5 w-2.5" />
+                  <span className="hidden sm:inline">Listen</span>
+                </>
+              )}
+            </button>
+          )}
 
           {/* Stress snapshot annotation on assistant messages */}
           {isAssistant && message.stressSnapshot && (

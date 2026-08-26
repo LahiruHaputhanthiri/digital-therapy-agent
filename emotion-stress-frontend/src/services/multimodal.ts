@@ -1,8 +1,10 @@
 import {
   EmotionProbability,
   KeystrokeMetrics,
+  Language,
   ModalityAvailability,
   MultimodalPayload,
+  SafetyRiskAssessment,
   StressEstimate,
   StressLevel,
 } from '@/types';
@@ -14,16 +16,19 @@ import {
  */
 export function buildMultimodalPayload(params: {
   sessionId: string;
+  language?: Language;
   text?: string;
   modalities: ModalityAvailability;
   keystrokeMetrics?: KeystrokeMetrics;
-  audioMetrics?: { volumeDb: number; recordingDurationSeconds: number };
+  audioMetrics?: { volumeDb: number; recordingDurationSeconds: number; audio?: string };
   facialMetrics?: { faceDetected: boolean; smileProbability: number; browFurrowScore: number };
   avgWeeklyStress?: number;
   dominantRecentMood?: string;
+  history?: Array<{ sender: 'user' | 'assistant' | 'system'; content: string }>;
 }): MultimodalPayload {
   const {
     sessionId,
+    language,
     text,
     modalities,
     keystrokeMetrics,
@@ -31,13 +36,23 @@ export function buildMultimodalPayload(params: {
     facialMetrics,
     avgWeeklyStress,
     dominantRecentMood,
+    history,
   } = params;
+
+  const hasVoiceAudio = Boolean(audioMetrics?.audio);
+  const effectiveModalities: ModalityAvailability = {
+    ...modalities,
+    audio: hasVoiceAudio || modalities.audio,
+    text: Boolean(text || modalities.text),
+  };
 
   return {
     sessionId,
+    language,
     timestamp: new Date().toISOString(),
-    text: modalities.text ? text : undefined,
-    modalities,
+    text: text || undefined,
+    modalities: effectiveModalities,
+    history,
     keystrokeFeatures: modalities.keystroke && keystrokeMetrics
       ? {
           dwellTimeMs: keystrokeMetrics.dwellTimeMs,
@@ -48,8 +63,9 @@ export function buildMultimodalPayload(params: {
           cadenceConsistency: keystrokeMetrics.cadenceConsistency,
         }
       : undefined,
-    audioFeatures: modalities.audio && audioMetrics
+    audioFeatures: (effectiveModalities.audio || hasVoiceAudio) && audioMetrics
       ? {
+          audio: audioMetrics.audio,
           volumeDb: audioMetrics.volumeDb,
           recordingDurationSeconds: audioMetrics.recordingDurationSeconds,
           // Simulated pitch and silence when real spectral analysis is unavailable

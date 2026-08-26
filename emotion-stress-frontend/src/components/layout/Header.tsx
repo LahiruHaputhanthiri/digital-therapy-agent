@@ -48,7 +48,7 @@ export function Header({
   const [showCrisis, setShowCrisis] = useState(false);
 
   const { theme, resolvedTheme, setTheme } = useTheme();
-  const { t, language, setLanguage } = useTranslation();
+  const { t, language, setLanguage, toggleLanguage } = useTranslation();
   const stressEstimate = useStressStore((state) => state.stressEstimate);
   const updateStressEstimate = useStressStore((state) => state.updateStressEstimate);
 

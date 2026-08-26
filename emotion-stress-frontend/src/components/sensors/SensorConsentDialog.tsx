@@ -40,7 +40,7 @@ export function SensorConsentDialog({
       onOpenChange={onOpenChange}
       title={title}
       description="Optional multimodal signal estimation for your session."
-      maxWidth="sm"
+      maxWidth="md"
     >
       <div className="space-y-4 pt-1">
         <div className="flex items-center gap-3 p-3 rounded-xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/60">

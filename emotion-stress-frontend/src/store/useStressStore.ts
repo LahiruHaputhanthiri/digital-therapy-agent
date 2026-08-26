@@ -28,6 +28,7 @@ interface StressStoreState {
   theme: 'light' | 'dark' | 'system';
   language: Language;
   isDemoMode: boolean;
+  isTtsEnabled: boolean;
 
   // Real-time Multimodal Metrics
   stressEstimate: StressEstimate;
@@ -52,11 +53,14 @@ interface StressStoreState {
   setLanguage: (language: Language) => void;
   toggleLanguage: () => void;
   toggleDemoMode: (enabled?: boolean) => void;
+  toggleTts: (enabled?: boolean) => void;
   setModality: (modality: keyof ModalityAvailability, enabled: boolean) => void;
   updateStressEstimate: (estimate: Partial<StressEstimate>) => void;
   updateEmotionProbabilities: (probabilities: Partial<EmotionProbability>) => void;
   updateKeystrokeMetrics: (metrics: Partial<KeystrokeMetrics>) => void;
   addMessage: (message: Omit<Message, 'id' | 'timestamp'>) => Message;
+  updateMessageContent: (id: string, content: string) => void;
+  updateLastUserMessageContent: (content: string) => void;
   updateStreamingMessage: (id: string, chunk: string) => void;
   setAiTyping: (typing: boolean) => void;
   setIntervention: (intervention: InterventionType) => void;
@@ -115,6 +119,7 @@ export const useStressStore = create<StressStoreState>((set, get) => ({
   theme: 'system',
   language: 'en',
   isDemoMode: true,
+  isTtsEnabled: true,
 
   userProfile: {
     name: 'Alex Chen',
@@ -176,6 +181,9 @@ export const useStressStore = create<StressStoreState>((set, get) => ({
 
   toggleDemoMode: (enabled) =>
     set((state) => ({ isDemoMode: enabled !== undefined ? enabled : !state.isDemoMode })),
+
+  toggleTts: (enabled) =>
+    set((state) => ({ isTtsEnabled: enabled !== undefined ? enabled : !state.isTtsEnabled })),
 
   setModality: (modality, enabled) =>
     set((state) => {
@@ -250,6 +258,23 @@ export const useStressStore = create<StressStoreState>((set, get) => ({
 
     return newMessage;
   },
+
+  updateMessageContent: (id, content) =>
+    set((state) => ({
+      messages: state.messages.map((m) => (m.id === id ? { ...m, content } : m)),
+    })),
+
+  updateLastUserMessageContent: (content) =>
+    set((state) => {
+      const msgs = [...state.messages];
+      for (let i = msgs.length - 1; i >= 0; i--) {
+        if (msgs[i].sender === 'user') {
+          msgs[i] = { ...msgs[i], content };
+          break;
+        }
+      }
+      return { messages: msgs };
+    }),
 
   updateStreamingMessage: (id, chunk) =>
     set((state) => ({

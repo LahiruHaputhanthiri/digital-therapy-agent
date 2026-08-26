@@ -172,58 +172,61 @@ export const MockMultimodalService = {
       .map(([name]) => name.charAt(0).toUpperCase() + name.slice(1))
       .join(', ');
 
+    // Check for explicit coping/breathing request
+    const lowerText = text.toLowerCase();
+    const isExplicitCoping =
+      lowerText.includes('breathing') ||
+      lowerText.includes('breath') ||
+      lowerText.includes('calm down') ||
+      lowerText.includes('exercise') ||
+      lowerText.includes('හුස්ම') ||
+      lowerText.includes('සන්සුන්') ||
+      lowerText.includes('மூச்சு') ||
+      lowerText.includes('பயிற்சி');
+
     // Generate Contextual Reply (Trilingual)
     let reply = '';
     if (isTamil) {
       if (isSafetyTriggered && safetyRiskLevel === 'high_safety_risk') {
         reply =
           'உங்கள் பாதுகாப்பும் மனநலமும் எங்களுக்கு மிகவும் முக்கியமானது. தயவுசெய்து நினைவில் கொள்ளுங்கள், நீங்கள் தனியாக இல்லை. உடனடியாக உதவக்கூடிய ரகசிய உதவி எண்கள் (1926) திரையில் காட்டப்பட்டுள்ளன.';
-      } else if (isSafetyTriggered && safetyRiskLevel === 'potential_concern') {
+      } else if (isExplicitCoping) {
         reply =
-          'மனதில் அதிக பாரம் இருப்பது தெரிகிறது. நாம் இணைந்து மெதுவாக ஒரு ஆழமான மூச்சை எடுப்போம். ஒரு சிறிய 5-4-3-2-1 உணர்வு நிலைப்படுத்துதல் அல்லது எளிய மூச்சுப்பயிற்சியை செய்யலாமா?';
-      } else if (calculatedLevel === 'high') {
+          'நிச்சயமாக, நாம் இணைந்து ஒரு எளிய பயிற்சியை மேற்கொள்வோம். நீங்கள் தயாராக இருந்தால், நாம் மெதுவாக 4-4-4-4 மூச்சுப்பயிற்சியை தொடங்கலாம். உங்கள் தோள்களை தளர்த்தி மெதுவாக ஆழமான மூச்சை எடுங்கள்.';
+      } else if (calculatedLevel === 'high' || calculatedLevel === 'moderate') {
         reply =
-          'இன்று உங்கள் மனதில் அதிக பாரம் இருப்பது எனக்கு புரிகிறது. பதற்றமடைய வேண்டாம், அதிக அழுத்தத்தை ஏற்படுத்தும் விடயத்தை பற்றி பேசலாமா அல்லது மனதை அமைதிப்படுத்தும் சிறிய இடைவேளை எடுக்கலாமா?';
-      } else if (calculatedLevel === 'moderate') {
-        reply =
-          'நீங்கள் பகிர்ந்ததில் சற்று மன அழுத்தம் தெரிகிறது. ஆழமான மூச்சை எடுத்து எண்ணங்களை வரிசைப்படுத்துவது உங்களுக்கு உதவியாக இருக்கும். இப்போது உங்கள் முக்கிய கவனம் என்ன?';
+          'இன்று உங்களுக்கு மிகவும் கடினமாகவும் மனதளவில் சோர்வாகவும் இருந்திருக்கிறது என்பதை உணர முடிகிறது. இந்த தருணத்தில் அனைத்தையும் உடனே சரிசெய்ய வேண்டும் என்ற கட்டாயமில்லை. நான் உங்களுக்கு செவிசாய்க்க இங்கு இருக்கிறேன் — உங்கள் மனதில் உள்ளதை என்னுடன் பகிர்ந்துகொள்ள விரும்புகிறீர்களா?';
       } else {
         reply =
-          'உங்கள் எண்ணங்களை என்னுடன் பகிர்ந்ததற்கு நன்றி. நீங்கள் இப்போது அமைதியான மனநிலையில் இருப்பது தெரிகிறது. இன்று நாம் வேறு எதைப்பற்றி பேசலாம்?';
+          'உங்கள் எண்ணங்களை என்னுடன் பகிர்ந்ததற்கு நன்றி. நான் உங்களுக்கு செவிசாய்க்க இங்கு உள்ளேன். இன்று உங்கள் மனதில் உள்ள முக்கிய விடயம் என்ன?';
       }
     } else if (isSinhala) {
       if (isSafetyTriggered && safetyRiskLevel === 'high_safety_risk') {
         reply =
           'ඔබේ ආරක්ෂාව සහ මානසික සුවතාවය අපට ඉතාම වැදගත්. කරුණාකර මතක තබාගන්න, ඔබ තනිවී නැත. ඔබට මේ මොහොතේම සහය විය හැකි රහස්‍ය උපකාරක දුරකථන අංක සහ සේවාවන් තිරයේ දක්වා ඇත.';
-      } else if (isSafetyTriggered && safetyRiskLevel === 'potential_concern') {
+      } else if (isExplicitCoping) {
         reply =
-          'දේවල් දරාගැනීමට අපහසු තරම් බරක් දැනෙන බව පෙනේ. අපි එක්ව සෙමින් ගැඹුරු හුස්මක් ගනිමු. කෙටි 5-4-3-2-1 ඉන්ද්‍රිය මුල්බැසීමේ අභ්‍යාසයක් හෝ සන්සුන් හුස්ම ගැනීමේ ක්‍රමයක් අත්හදා බලමුද?';
-      } else if (calculatedLevel === 'high') {
+          'නිසැකවම, අපි එක්ව සරල අභ්‍යාසයක් කරමු. ඔබ කැමති නම්, සෙමින් 4-4-4-4 හුස්ම ගැනීමේ ව්‍යායාමයකින් පටන් ගනිමු. උරහිස් සැහැල්ලු කර ගැඹුරු හුස්මක් ඉහළට ගන්න.';
+      } else if (calculatedLevel === 'high' || calculatedLevel === 'moderate') {
         reply =
-          'අද දවසේ ඔබේ සිතට විශාල බරක් දැනෙන බව මට වැටහෙනවා. කලබල නොවන්න, ඔබේ සිතට වඩාත්ම බලපාන කරුණ ගැන කතා කරමුද, නැතහොත් සිත සන්සුන් කරගැනීමේ කෙටි විරාමයක් ගනිමුද?';
-      } else if (calculatedLevel === 'moderate') {
-        reply =
-          'ඔබ පැවසූ දෙයෙහි යම් ආතතියක් හෝ නොසන්සුන් බවක් දැනෙනවා. ගැඹුරු හුස්මක් ගෙන සිතුවිලි සෙමින් පෙළගස්වා ගැනීම ඔබට මහත් සහනයක් වේවි. මේ මොහොතේ ඔබේ ප්‍රමුඛතාවය කුමක්ද?';
+          'අද දවස ඔබට ඇත්තෙන්ම දැඩි වෙහෙසකර සහ බරක් දැනුණු දවසක් බව පෙනෙනවා. මේ මොහොතේම සියල්ල විසඳන්න හෝ තනිවම ඒ බර උසුලන්න අවශ්‍ය නැහැ. මම ඔබට සවන් දීමට මෙහි සිටිමි — ඔබේ සිතට දැනෙන දේ ගැන තව ටිකක් කතා කිරීමට ඔබ කැමතිද?';
       } else {
         reply =
-          'ඔබේ සිතුවිලි මා සමඟ බෙදාගැනීම ගැන ස්තූතියි. ඔබ මේ වන විට යහපත්, සන්සුන් මනෝභාවයක සිටින බව පෙනේ. අද අප කතා කිරීමට කැමති තවත් කරුණක් තිබේද?';
+          'ඔබේ සිතුවිලි මා සමඟ බෙදාගැනීම ගැන ස්තූතියි. මම ඔබට සවන් දීමට මෙහි සිටිමි. අද දවසේ ඔබේ සිතට දැනෙන ප්‍රධානතම දෙය කුමක්ද?';
       }
     } else {
       if (isSafetyTriggered && safetyRiskLevel === 'high_safety_risk') {
         reply =
           "Your safety and wellbeing are what matter most. Please remember that you don't have to navigate this alone. I've brought up confidential support hotlines and contacts on your screen.";
-      } else if (isSafetyTriggered && safetyRiskLevel === 'potential_concern') {
+      } else if (isExplicitCoping) {
         reply =
-          "It feels like things are becoming overwhelming right now. Let's take a gentle pause together. Would you like to try a short 5-4-3-2-1 grounding exercise or slow box breathing?";
-      } else if (calculatedLevel === 'high') {
+          "Of course. Let's try something small and gentle together. If you're comfortable, we can do a short 4-4-4 Box Breathing exercise: breathing in slowly, holding gently, and releasing all that tension.";
+      } else if (calculatedLevel === 'high' || calculatedLevel === 'moderate') {
         reply =
-          "It sounds like there is a lot weighing on you today. Take your time. Would you like to explore what is contributing most to this stress, or try a relaxation pause?";
-      } else if (calculatedLevel === 'moderate') {
-        reply =
-          'I sense some tension in what you described. Taking a moment to breathe and pace your thoughts can be really helpful. What feels like the biggest priority right now?';
+          "That sounds like it's been a really heavy day, and it makes complete sense that you're feeling exhausted. You don't have to figure everything out or carry it all right now. I'm right here to listen — if you'd like, tell me a little about what's been weighing on you.";
       } else {
         reply =
-          'Thank you for checking in with me. You seem to be in a relatively grounded space. What would you like to reflect on or explore today?';
+          "Thank you for sharing that with me. I'm here to listen and explore whatever is on your mind today. How are you feeling in this present moment?";
       }
     }
 
