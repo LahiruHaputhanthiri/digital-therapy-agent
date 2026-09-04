@@ -63,12 +63,10 @@ const PHASE_COLORS: Record<BreathPhase, { text: string; ring: string; glow: stri
 };
 
 /**
- * BreathingCircle - Phase 4 Intervention
- * Interactive breathing exercise component supporting:
- * - Box Breathing (4-4-4-4) for focused stress regulation
- * - 4-7-8 Relaxing Breath for nervous system down-regulation
- * Mode selector, animated expanding/contracting Framer Motion circle,
- * live countdown, cycle counter, pause/resume, and reset controls.
+ * BreathingCircle - Centered Somatic Modal Intervention.
+ *
+ * Appears dead-center in the viewport with a frosted backdrop overlay (`z-[100]`),
+ * completely decoupled from the scroll position of the chat log.
  */
 export function BreathingCircle() {
   const setIntervention = useStressStore((state) => state.setIntervention);
@@ -80,6 +78,23 @@ export function BreathingCircle() {
   const [completedCycles, setCompletedCycles] = useState(0);
 
   const durations = MODE_DURATIONS[mode];
+
+  // Lock body scroll and handle Escape key for modal dismissal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIntervention('none');
+      }
+    };
+
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [setIntervention]);
 
   /** Advance to the next breath phase in sequence */
   const advancePhase = useCallback(
@@ -144,139 +159,161 @@ export function BreathingCircle() {
   const modeInfo = MODE_LABELS[mode];
 
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-b from-teal-50/90 via-blue-50/70 to-slate-50 dark:from-teal-950/30 dark:via-blue-950/20 dark:to-slate-900 p-5 sm:p-6 border border-teal-200/80 dark:border-teal-900/50 shadow-lg text-center">
-      {/* Header Row */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Wind className="h-4 w-4 text-teal-600 dark:text-teal-400" />
-          <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-            {modeInfo.title}
-          </h4>
-          <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-teal-100/70 text-teal-700 dark:bg-teal-950 dark:text-teal-300">
-            {modeInfo.tag}
-          </span>
-        </div>
-        <button
-          type="button"
-          onClick={() => setIntervention('none')}
-          aria-label="Close breathing exercise"
-          className="rounded-lg p-1 text-slate-400 hover:text-slate-600 hover:bg-white/60 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      </div>
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-slate-950/70 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200"
+      role="dialog"
+      aria-modal="true"
+      aria-label={modeInfo.title}
+    >
+      {/* Click backdrop to dismiss */}
+      <div
+        className="fixed inset-0 -z-10"
+        onClick={() => setIntervention('none')}
+        aria-hidden="true"
+      />
 
-      {/* Mode Selector Pills */}
-      <div className="flex justify-center gap-2 mb-5">
-        {(Object.keys(MODE_LABELS) as BreathingMode[]).map((m) => (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.92, y: 16 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.92, y: 16 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 280 }}
+        className="relative w-full max-w-md my-auto overflow-hidden rounded-3xl bg-gradient-to-b from-teal-50/95 via-blue-50/90 to-slate-50 dark:from-slate-900/95 dark:via-slate-900/95 dark:to-slate-950 p-6 sm:p-7 border border-teal-200/80 dark:border-teal-900/60 shadow-2xl text-center"
+      >
+        {/* Header Row */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-xl bg-teal-100 dark:bg-teal-950/80 text-teal-600 dark:text-teal-300">
+              <Wind className="h-4 w-4" />
+            </div>
+            <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100">
+              {modeInfo.title}
+            </h4>
+            <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-teal-100/80 text-teal-700 dark:bg-teal-950 dark:text-teal-300">
+              {modeInfo.tag}
+            </span>
+          </div>
           <button
-            key={m}
             type="button"
-            onClick={() => handleModeChange(m)}
-            aria-pressed={mode === m}
-            className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all duration-200 cursor-pointer ${
-              mode === m
-                ? 'bg-teal-600 text-white border-teal-600 shadow-xs'
-                : 'bg-white/60 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-teal-400'
-            }`}
+            onClick={() => setIntervention('none')}
+            aria-label="Close breathing exercise"
+            className="rounded-xl p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors cursor-pointer"
           >
-            {MODE_LABELS[m].tag}
+            <X className="h-4 w-4" />
           </button>
-        ))}
-      </div>
-
-      {/* Animated Breathing Circle */}
-      <div className="py-4 flex flex-col items-center justify-center">
-        <div className="relative flex items-center justify-center h-48 w-48">
-          {/* Pulsing Outer Glow */}
-          <motion.div
-            animate={{ scale: circleScale * 1.18, opacity: isActive ? 0.3 : 0.08 }}
-            transition={{ duration: 3.8, ease: 'easeInOut' }}
-            className={`absolute h-40 w-40 rounded-full blur-xl ${colors.glow}`}
-          />
-
-          {/* Primary Animated Circle */}
-          <motion.div
-            animate={{ scale: circleScale }}
-            transition={{ duration: 3.8, ease: 'easeInOut' }}
-            className={`h-36 w-36 rounded-full bg-gradient-to-tr from-teal-500 to-blue-500 shadow-lg flex flex-col items-center justify-center text-white select-none ring-4 ${colors.ring}`}
-          >
-            <span className="text-2xl font-bold tracking-tight font-mono leading-none">
-              {secondsLeft}s
-            </span>
-            <span className="text-xs uppercase tracking-widest font-bold opacity-90 mt-1">
-              {phase}
-            </span>
-          </motion.div>
         </div>
 
-        {/* Phase Instruction & Cycle Counter */}
-        <AnimatePresence mode="wait">
-          <motion.p
-            key={phase}
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            transition={{ duration: 0.25 }}
-            className={`mt-4 text-xs font-medium max-w-xs h-6 ${colors.text}`}
-          >
-            {PHASE_INSTRUCTIONS[phase]}
-          </motion.p>
-        </AnimatePresence>
+        {/* Mode Selector Pills */}
+        <div className="flex justify-center gap-2 mb-5">
+          {(Object.keys(MODE_LABELS) as BreathingMode[]).map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => handleModeChange(m)}
+              aria-pressed={mode === m}
+              className={`px-3.5 py-1 rounded-full text-xs font-semibold border transition-all duration-200 cursor-pointer ${
+                mode === m
+                  ? 'bg-teal-600 text-white border-teal-600 shadow-xs'
+                  : 'bg-white/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-teal-400'
+              }`}
+            >
+              {MODE_LABELS[m].tag}
+            </button>
+          ))}
+        </div>
 
-        <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1.5">
-          Completed cycles: <span className="font-semibold font-mono">{completedCycles}</span>
+        {/* Animated Breathing Circle */}
+        <div className="py-4 flex flex-col items-center justify-center">
+          <div className="relative flex items-center justify-center h-48 w-48">
+            {/* Pulsing Outer Glow */}
+            <motion.div
+              animate={{ scale: circleScale * 1.18, opacity: isActive ? 0.35 : 0.08 }}
+              transition={{ duration: 3.8, ease: 'easeInOut' }}
+              className={`absolute h-40 w-40 rounded-full blur-xl ${colors.glow}`}
+            />
+
+            {/* Primary Animated Circle */}
+            <motion.div
+              animate={{ scale: circleScale }}
+              transition={{ duration: 3.8, ease: 'easeInOut' }}
+              className={`h-36 w-36 rounded-full bg-gradient-to-tr from-teal-500 to-blue-500 shadow-xl flex flex-col items-center justify-center text-white select-none ring-4 ${colors.ring}`}
+            >
+              <span className="text-2xl font-bold tracking-tight font-mono leading-none">
+                {secondsLeft}s
+              </span>
+              <span className="text-xs uppercase tracking-widest font-bold opacity-90 mt-1">
+                {phase}
+              </span>
+            </motion.div>
+          </div>
+
+          {/* Phase Instruction & Cycle Counter */}
+          <AnimatePresence mode="wait">
+            <motion.p
+              key={phase}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.25 }}
+              className={`mt-4 text-xs font-medium max-w-xs h-6 ${colors.text}`}
+            >
+              {PHASE_INSTRUCTIONS[phase]}
+            </motion.p>
+          </AnimatePresence>
+
+          <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1.5">
+            Completed cycles: <span className="font-semibold font-mono text-slate-700 dark:text-slate-300">{completedCycles}</span>
+          </p>
+        </div>
+
+        {/* Technique Description */}
+        <p className="text-[11px] text-slate-500 dark:text-slate-400 italic mb-5 max-w-xs mx-auto">
+          {modeInfo.description}
         </p>
-      </div>
 
-      {/* Technique Description */}
-      <p className="text-[11px] text-slate-500 dark:text-slate-400 italic mb-4 max-w-xs mx-auto">
-        {modeInfo.description}
-      </p>
+        {/* Controls */}
+        <div className="flex items-center justify-center gap-2 flex-wrap pt-2 border-t border-slate-200/60 dark:border-slate-800/60">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setIsActive((a) => !a)}
+            aria-label={isActive ? 'Pause breathing exercise' : 'Resume breathing exercise'}
+            className="rounded-xl px-3 gap-1.5 text-xs cursor-pointer"
+          >
+            {isActive ? (
+              <>
+                <Pause className="h-3.5 w-3.5" />
+                Pause
+              </>
+            ) : (
+              <>
+                <Play className="h-3.5 w-3.5" />
+                Resume
+              </>
+            )}
+          </Button>
 
-      {/* Controls */}
-      <div className="flex items-center justify-center gap-2 flex-wrap">
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => setIsActive((a) => !a)}
-          aria-label={isActive ? 'Pause breathing exercise' : 'Resume breathing exercise'}
-          className="rounded-xl px-3 gap-1.5 text-xs"
-        >
-          {isActive ? (
-            <>
-              <Pause className="h-3.5 w-3.5" />
-              Pause
-            </>
-          ) : (
-            <>
-              <Play className="h-3.5 w-3.5" />
-              Resume
-            </>
-          )}
-        </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={handleReset}
+            aria-label="Reset breathing exercise"
+            className="rounded-xl px-3 gap-1 text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            Reset
+          </Button>
 
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={handleReset}
-          aria-label="Reset breathing exercise"
-          className="rounded-xl px-3 gap-1 text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-200"
-        >
-          <RefreshCw className="h-3.5 w-3.5" />
-          Reset
-        </Button>
-
-        <Button
-          size="sm"
-          variant="accent"
-          onClick={() => setIntervention('none')}
-          className="rounded-xl px-4 text-xs gap-1.5"
-        >
-          <Check className="h-3.5 w-3.5" />
-          I Feel Calmer
-        </Button>
-      </div>
+          <Button
+            size="sm"
+            variant="accent"
+            onClick={() => setIntervention('none')}
+            className="rounded-xl px-4 text-xs gap-1.5 cursor-pointer font-bold shadow-sm"
+          >
+            <Check className="h-3.5 w-3.5" />
+            I Feel Calmer
+          </Button>
+        </div>
+      </motion.div>
     </div>
   );
 }

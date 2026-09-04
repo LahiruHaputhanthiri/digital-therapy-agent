@@ -226,3 +226,85 @@ export type ClientMessage =
   | {
       type: 'PING';
     };
+
+/**
+ * Authentication & Role-Based Access Control (RBAC) Contracts
+ */
+export type UserRole = 'user' | 'admin' | 'super_admin';
+
+export interface AuthUser {
+  id: number;
+  username: string;
+  email: string;
+  role: UserRole;
+  avatar?: string | null;
+}
+
+export interface UpdateProfilePayload {
+  username?: string;
+  password?: string;
+  avatar?: string | null;
+}
+
+export interface AuthTokenResponse {
+  access_token: string;
+  token_type: string;
+  user: AuthUser;
+}
+
+export interface LoginPayload {
+  email: string;
+  password: string;
+}
+
+export interface GoogleLoginPayload {
+  credential: string;
+}
+
+export interface RegisterPayload {
+  username: string;
+  email: string;
+  password: string;
+  role?: UserRole;
+  admin_secret?: string;
+}
+
+export interface CreateAdminPayload {
+  username: string;
+  email: string;
+  password: string;
+  role?: 'admin' | 'super_admin';
+}
+
+export interface SystemStats {
+  status: string;
+  total_users: number;
+  total_chat_logs: number;
+  users_by_role: Record<string, number>;
+  models_status: {
+    face_model: boolean;
+    voice_model: boolean;
+    voice_scaler: boolean;
+    health_model: boolean;
+    therapy_bot: boolean;
+  };
+  timestamp: string;
+}
+
+export interface ChatLogItem {
+  id: number;
+  user_id: number;
+  timestamp: string;
+  user_message?: string;
+  ai_response?: string;
+  detected_emotion?: string;
+  stress_score?: number;
+}
+
+export interface SaveChatTurnPayload {
+  user_message: string;
+  ai_response: string;
+  detected_emotion?: string;
+  stress_score?: number;
+  session_id?: string;
+}

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { background: #ffffff; }
+body {
+  width: 720pt; height: 405pt; margin: 0; padding: 0;
+  font-family: Arial, sans-serif; display: flex;
+  position: relative; overflow: hidden; background: #F8FAFB;
+}
+.left-bar { position: absolute; top: 0; left: 0; width: 6pt; height: 100%; background: #0D4F4F; }
+.header { position: absolute; top: 12pt; left: 28pt; right: 28pt; border-bottom: 2pt solid #00B4D8; padding-bottom: 4pt; }
+.header h1 { font-size: 24pt; color: #0D4F4F; margin: 0; font-weight: bold; }
+.content {
+  position: absolute; top: 48pt; left: 28pt; right: 28pt; bottom: 20pt;
+  display: flex; gap: 14pt;
+}
+.col-left {
+  flex: 1.2; display: flex; flex-direction: column;
+  background: #FFFFFF; border-radius: 6pt; border: 1px solid #D0D8DD;
+  padding: 6pt; box-shadow: 0 2pt 5pt rgba(0,0,0,0.04);
+}
+.col-left img { width: 100%; flex: 1; object-fit: contain; }
+.caption { margin-top: 4pt; }
+.caption p { font-size: 10pt; color: #555555; text-align: center; margin: 0; font-weight: 500; }
+.col-right { flex: 1.2; display: flex; flex-direction: column; justify-content: space-between; }
+.step-box {
+  padding: 4pt 8pt; background: #FFFFFF; border-radius: 4pt;
+  border: 1px solid #D0D8DD; border-left: 3.5pt solid #00B4D8;
+  display: flex; gap: 8pt; align-items: center;
+}
+.step-box.dark { border-left-color: #0D4F4F; }
+.step-box.amber { border-left-color: #F77F00; }
+.step-badge {
+  font-size: 11pt; font-weight: bold; color: #00B4D8;
+  width: 16pt; flex-shrink: 0; text-align: center;
+}
+.step-box.dark .step-badge { color: #0D4F4F; }
+.step-box.amber .step-badge { color: #F77F00; }
+.step-info h3 { font-size: 11pt; color: #0D4F4F; margin: 0 0 1pt 0; font-weight: bold; }
+.step-info p { font-size: 9.5pt; color: #444444; margin: 0; line-height: 1.25; }
+.async-note {
+  padding: 5pt 8pt; background: #FFF8E1; border-radius: 4pt;
+  border-left: 3pt solid #FFB300; border: 1px solid #FFE082;
+  border-left: 3pt solid #FFB300;
+}
+.async-note p { font-size: 10pt; color: #5D4037; margin: 0; line-height: 1.3; }
+.async-note b { color: #E65100; }
+</style>
+</head>
+<body>
+<div class="left-bar"></div>
+<div class="header"><h1>End-to-End System Workflow &amp; Sequence</h1></div>
+<div class="content">
+  <div class="col-left">
+    <img src="img/fig10_sequence.png">
+    <div class="caption"><p>Figure 10: Multimodal Asynchronous Sequence Flow (Thesis Chapter 5)</p></div>
+  </div>
+
+  <div class="col-right">
+    <div class="step-box dark">
+      <span class="step-badge">1</span>
+      <div class="step-info">
+        <h3>WebRTC Media Acquisition</h3>
+        <p>Browser captures webcam video frames &amp; audio chunks under user consent.</p>
+      </div>
+    </div>
+
+    <div class="step-box">
+      <span class="step-badge">2</span>
+      <div class="step-info">
+        <h3>WebSocket Streaming</h3>
+        <p>Bi-directional full-duplex TCP stream delivers payloads with &lt;50ms network latency.</p>
+      </div>
+    </div>
+
+    <div class="step-box">
+      <span class="step-badge">3</span>
+      <div class="step-info">
+        <h3>Parallel Worker Inference</h3>
+        <p>FastAPI dispatches Facial CNN &amp; Speech DNN via non-blocking worker threads.</p>
+      </div>
+    </div>
+
+    <div class="step-box amber">
+      <span class="step-badge">4</span>
+      <div class="step-info">
+        <h3>Late Fusion &amp; Conflict Resolution</h3>
+        <p>Calculates 50/50 weighted state and checks for polar emotion conflicts.</p>
+      </div>
+    </div>
+
+    <div class="step-box dark">
+      <span class="step-badge">5</span>
+      <div class="step-info">
+        <h3>Constrained CBT Dialogue &amp; TTS</h3>
+        <p>Gemini LLM generates structured therapy reply; audio is synthesized via TTS.</p>
+      </div>
+    </div>
+
+    <div class="async-note">
+      <p><b>Non-Blocking Concurrency:</b> <code>asyncio.to_thread</code> isolates heavy tensor matrix multiplications, preserving a smooth 60 FPS client experience.</p>
+    </div>
+  </div>
+</div>
+</body>
+</html>

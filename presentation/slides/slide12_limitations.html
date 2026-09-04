@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { background: #ffffff; }
+body {
+  width: 720pt; height: 405pt; margin: 0; padding: 0;
+  font-family: Arial, sans-serif; display: flex;
+  position: relative; overflow: hidden; background: #F8FAFB;
+}
+.left-bar { position: absolute; top: 0; left: 0; width: 6pt; height: 100%; background: #0D4F4F; }
+.header { position: absolute; top: 12pt; left: 28pt; right: 28pt; border-bottom: 2pt solid #00B4D8; padding-bottom: 4pt; }
+.header h1 { font-size: 24pt; color: #0D4F4F; margin: 0; font-weight: bold; }
+.content {
+  position: absolute; top: 48pt; left: 28pt; right: 28pt; bottom: 20pt;
+  display: flex; flex-direction: column; justify-content: space-between; gap: 6pt;
+}
+.limits-grid { display: flex; gap: 8pt; flex-wrap: wrap; }
+.limit-card {
+  flex: 1; min-width: 300pt; padding: 6pt 8pt;
+  background: #FFFFFF; border-radius: 5pt;
+  border: 1px solid #D0D8DD; border-left: 4pt solid #E74C3C;
+  box-shadow: 0 1.5pt 3pt rgba(0,0,0,0.03);
+}
+.limit-card.amber { border-left-color: #F77F00; }
+.limit-card.teal { border-left-color: #00B4D8; }
+.limit-card.blue { border-left-color: #3182CE; }
+.limit-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2pt; }
+.limit-header h2 { font-size: 11.5pt; color: #0D4F4F; margin: 0; font-weight: bold; }
+.limit-badge { font-size: 8.5pt; font-weight: bold; padding: 1.5pt 5pt; border-radius: 3pt; background: #FEE2E2; color: #991B1B; }
+.limit-card p { font-size: 10pt; color: #444444; margin: 0; line-height: 1.3; }
+.limit-card b { color: #111111; }
+.academic-box {
+  padding: 5pt 8pt; background: #FFF8E1; border-radius: 4pt;
+  border-left: 3.5pt solid #FFB300; border: 1px solid #FFE082;
+  border-left: 3.5pt solid #FFB300;
+}
+.academic-box p { font-size: 10.5pt; color: #5D4037; margin: 0; line-height: 1.3; }
+.academic-box b { color: #E65100; }
+</style>
+</head>
+<body>
+<div class="left-bar"></div>
+<div class="header"><h1>Critical Evaluation: System Limitations</h1></div>
+<div class="content">
+  <div class="limits-grid">
+    <div class="limit-card">
+      <div class="limit-header">
+        <h2>01 &bull; Visual Domain Gap (FER-2013)</h2>
+        <span class="limit-badge">ML Model</span>
+      </div>
+      <p>FER-2013 contains <b>low-resolution (48&times;48) grayscale</b> crops with ~65% human agreement ceiling. MobileNetV2 underperformed baseline CNN (40.53% vs 61.90%) due to ImageNet feature mismatch.</p>
+    </div>
+
+    <div class="limit-card amber">
+      <div class="limit-header">
+        <h2>02 &bull; Platform Dependency (TTS)</h2>
+        <span class="limit-badge" style="background:#FEF3C7; color:#92400E;">Host OS</span>
+      </div>
+      <p>Browser-native neural voice synthesis in <b>Sinhala and Tamil relies on OS-level voice pack availability</b>, requiring cloud fallbacks on unsupported client environments.</p>
+    </div>
+
+    <div class="limit-card teal">
+      <div class="limit-header">
+        <h2>03 &bull; Environmental Sensitivity</h2>
+        <span class="limit-badge" style="background:#E0F2FE; color:#0369A1;">Acoustics &amp; Light</span>
+      </div>
+      <p>Speech emotion recognition is susceptible to <b>background ambient noise</b> and microphone hardware; facial classification degrades under poor illumination and head rotation.</p>
+    </div>
+
+    <div class="limit-card blue">
+      <div class="limit-header">
+        <h2>04 &bull; Evaluation Constraint &amp; Scope</h2>
+        <span class="limit-badge" style="background:#EBF8FF; color:#2B6CB0;">Evaluation</span>
+      </div>
+      <p>No single unified multimodal benchmark metric exists because models were evaluated independently; system is <b>strictly non-clinical</b> without formal longitudinal trials.</p>
+    </div>
+  </div>
+
+  <div class="academic-box">
+    <p><b>Academic Integrity Note:</b> Empirical limitations are presented transparently as engineering findings rather than failures; no unified multimodal accuracy is claimed without paired benchmark verification.</p>
+  </div>
+</div>
+</body>
+</html>

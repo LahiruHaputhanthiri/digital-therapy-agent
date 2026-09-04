@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { background: #ffffff; }
+body {
+  width: 720pt; height: 405pt; margin: 0; padding: 0;
+  font-family: Arial, sans-serif; display: flex;
+  position: relative; overflow: hidden; background: #F8FAFB;
+}
+.left-bar { position: absolute; top: 0; left: 0; width: 6pt; height: 100%; background: #0D4F4F; }
+.header { position: absolute; top: 12pt; left: 28pt; right: 28pt; border-bottom: 2pt solid #00B4D8; padding-bottom: 4pt; }
+.header h1 { font-size: 24pt; color: #0D4F4F; margin: 0; font-weight: bold; }
+.content {
+  position: absolute; top: 48pt; left: 28pt; right: 28pt; bottom: 22pt;
+  display: flex; gap: 14pt;
+}
+.col-left { flex: 1.15; display: flex; flex-direction: column; justify-content: space-between; }
+.col-right { flex: 0.85; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+.col-right img { width: 100%; max-height: 250pt; object-fit: contain; border-radius: 6pt; border: 1px solid #D0D8DD; box-shadow: 0 2pt 5pt rgba(0,0,0,0.06); }
+.caption { margin-top: 4pt; }
+.caption p { font-size: 10pt; color: #555555; text-align: center; margin: 0; font-weight: 500; }
+.sec-block { margin-bottom: 2pt; }
+.sec-block h2 { font-size: 13pt; color: #0D4F4F; margin: 0 0 2pt 0; text-transform: uppercase; letter-spacing: 0.5pt; font-weight: bold; }
+.sec-block ul { margin: 0; padding-left: 14pt; }
+.sec-block li { font-size: 11pt; color: #333333; margin-bottom: 2pt; line-height: 1.25; }
+.sec-block b { color: #111111; }
+.sol-box {
+  padding: 6pt 10pt; background: #E6FFFA; border-radius: 5pt;
+  border: 1px solid #B2F5EA; border-left: 3.5pt solid #00B4D8;
+}
+.sol-box p { font-size: 11pt; color: #234E52; margin: 0; line-height: 1.35; }
+.sol-box b { color: #0D4F4F; }
+</style>
+</head>
+<body>
+<div class="left-bar"></div>
+<div class="header"><h1>Introduction &amp; Problem Statement</h1></div>
+<div class="content">
+  <div class="col-left">
+    <div class="sec-block">
+      <h2>Mental Health Crisis &amp; Clinical Deficit</h2>
+      <ul>
+        <li><b>1 in 4 individuals</b> globally affected by mental health disorders (WHO, 2022).</li>
+        <li><b>76% in LMICs</b> receive zero professional treatment or support.</li>
+        <li><b>Sri Lanka:</b> 14.6 suicides per 100k; only <b>0.2 psychiatrists per 100k</b>.</li>
+        <li>Deep cultural stigma suppresses traditional in-person help-seeking.</li>
+      </ul>
+    </div>
+    <div class="sec-block">
+      <h2>Core Technical &amp; Usability Problem</h2>
+      <ul>
+        <li>Existing digital tools are <b>monolingual (English)</b> and text-heavy.</li>
+        <li>Typing emotional descriptions imposes <b>cognitive friction during panic</b>.</li>
+        <li>Traditional chatbots lack <b>real-time non-verbal affective awareness</b>.</li>
+      </ul>
+    </div>
+    <div class="sol-box">
+      <p><b>Proposed Solution:</b> A low-barrier, trilingual (EN / SI / TA) wellness companion integrating real-time facial and speech emotion recognition for non-clinical guided support.</p>
+    </div>
+  </div>
+  <div class="col-right">
+    <img src="img/EVID-SS-001_landing_page.png">
+    <div class="caption"><p>Figure 1: MindCare Trilingual Landing Interface (EVID-SS-001)</p></div>
+  </div>
+</div>
+</body>
+</html>

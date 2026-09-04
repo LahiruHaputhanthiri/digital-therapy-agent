@@ -13,6 +13,7 @@ import {
   TrendingDown,
   Minus,
   History,
+  LogOut,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -20,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { SessionHistory } from '@/components/dashboard/SessionHistory';
 import { SettingsModal } from '@/components/layout/SettingsModal';
 import { useStressStore } from '@/store/useStressStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { useTranslation } from '@/locales';
 
 export interface HistoryDrawerProps {
@@ -57,8 +59,13 @@ export function HistoryDrawer({ isOpen, onClose }: HistoryDrawerProps) {
   const stressEstimate = useStressStore((state) => state.stressEstimate);
   const moodHistory = useStressStore((state) => state.moodHistory);
   const setIntervention = useStressStore((state) => state.setIntervention);
+  const authUser = useAuthStore((state) => state.user);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const openProfileModal = useAuthStore((state) => state.openProfileModal);
+  const logout = useAuthStore((state) => state.logout);
   const { t, language } = useTranslation();
 
+  const displayName = authUser?.username || userProfile.preferredName;
   const streak = computeStreak(moodHistory);
 
   // Close on Escape key
@@ -171,21 +178,48 @@ export function HistoryDrawer({ isOpen, onClose }: HistoryDrawerProps) {
                   {/* User Profile Card */}
                   <Card className="border-slate-200/80 dark:border-slate-800/80 shadow-xs">
                     <CardContent className="p-4 space-y-3">
-                      <div className="flex items-center gap-3">
-                        <div className="h-11 w-11 rounded-2xl bg-gradient-to-tr from-teal-500 to-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-sm shrink-0">
-                          {userProfile.preferredName.charAt(0).toUpperCase()}
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <div className="h-11 w-11 rounded-2xl bg-gradient-to-tr from-teal-500 to-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-sm shrink-0 overflow-hidden ring-2 ring-teal-500/20">
+                            {authUser?.avatar ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={authUser.avatar}
+                                alt={displayName}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <span>{displayName.charAt(0).toUpperCase()}</span>
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <h3
+                              suppressHydrationWarning
+                              className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate"
+                            >
+                              {getGreeting()}, {displayName}
+                            </h3>
+                            <p className="text-xs text-teal-600 dark:text-teal-400 font-medium truncate">
+                              {t.historyDrawer.presenceText}
+                            </p>
+                          </div>
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <h3
-                            suppressHydrationWarning
-                            className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate"
+
+                        {isAuthenticated && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              onClose();
+                              openProfileModal();
+                            }}
+                            className="rounded-xl text-xs px-2.5 h-8 gap-1 shrink-0 cursor-pointer text-slate-600 dark:text-slate-300"
+                            title="Edit Profile Settings"
                           >
-                            {getGreeting()}, {userProfile.preferredName}
-                          </h3>
-                          <p className="text-xs text-teal-600 dark:text-teal-400 font-medium truncate">
-                            {t.historyDrawer.presenceText}
-                          </p>
-                        </div>
+                            <Settings className="h-3.5 w-3.5" />
+                            <span className="hidden sm:inline">Edit</span>
+                          </Button>
+                        )}
                       </div>
 
                       {/* Wellbeing State + Trend + Streak */}
@@ -243,8 +277,8 @@ export function HistoryDrawer({ isOpen, onClose }: HistoryDrawerProps) {
                     </CardContent>
                   </Card>
 
-                  {/* Past Session Archive */}
-                  <SessionHistory />
+                  {/* Past Session Archive (Database-backed) */}
+                  <SessionHistory onSelectSession={onClose} />
 
                   {/* Settings Button Trigger */}
                   <button
@@ -275,13 +309,28 @@ export function HistoryDrawer({ isOpen, onClose }: HistoryDrawerProps) {
                 {/* Drawer Footer */}
                 <div className="p-3 px-5 border-t border-slate-200/80 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/80 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 shrink-0">
                   <span>{t.historyDrawer.version}</span>
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="px-3 py-1 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-medium transition-colors cursor-pointer"
-                  >
-                    {t.common.close}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {isAuthenticated && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          logout();
+                          onClose();
+                        }}
+                        className="px-2.5 py-1 rounded-xl text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/40 font-semibold transition-colors flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <LogOut className="h-3.5 w-3.5" />
+                        <span>Sign Out</span>
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={onClose}
+                      className="px-3 py-1 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-medium transition-colors cursor-pointer"
+                    >
+                      {t.common.close}
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             </div>

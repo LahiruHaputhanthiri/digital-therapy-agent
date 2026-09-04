@@ -4,7 +4,6 @@ import {
   Language,
   ModalityAvailability,
   MultimodalPayload,
-  SafetyRiskAssessment,
   StressEstimate,
   StressLevel,
 } from '@/types';
@@ -233,7 +232,7 @@ export function simulateMultimodalInference(payload: MultimodalPayload): MockInf
   let joy = 22;
   let anger = 6;
   let surprise = 8;
-  let disgust = 4;
+  const disgust = 4;
   let neutral = 38;
   let isCrisis = false;
   let safetyReason: string | undefined;

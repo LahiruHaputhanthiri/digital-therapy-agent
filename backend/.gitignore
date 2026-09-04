@@ -1,4 +1,5 @@
 .env
+!.env.example
 __pycache__/
 *.py[cod]
 .venv/
@@ -8,3 +9,9 @@ env/
 .mypy_cache/
 .idea/
 .vscode/
+
+# Local SQLite databases
+*.db
+*.sqlite
+*.sqlite3
+therapy_agent.db

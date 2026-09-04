@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect, useState } from 'react';
+import { AnimatePresence } from 'framer-motion';
 import {
   Shield,
   Sparkles,
@@ -13,6 +14,7 @@ import {
   Volume2,
   VolumeX,
   Square,
+  Activity,
 } from 'lucide-react';
 import { MessageBubble } from '@/components/chat/MessageBubble';
 import { TypingIndicator } from '@/components/chat/TypingIndicator';
@@ -23,9 +25,11 @@ import { BreathingCircle } from '@/components/interventions/BreathingCircle';
 import { GroundingExercise } from '@/components/interventions/GroundingExercise';
 import { Badge } from '@/components/ui/badge';
 import { useStressStore } from '@/store/useStressStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useTranslation } from '@/locales';
 import { playTTS, stopTTS } from '@/utils/tts';
+import { ApiService } from '@/services/api';
 
 /**
  * Modality badge configuration — maps modality keys to display metadata.
@@ -62,7 +66,7 @@ const MODALITY_META: Record<
 };
 
 /**
- * ChatWindow - Phase 4 Chat Interface with Bilingual Support & TTS
+ * ChatWindow — Calm Intelligence AI Companion Interface.
  * Complete conversation container providing:
  * - Sticky header with assistant identity, connection status, modality indicator badges, and session stress badge
  * - Auto-scrolling message list with SafetyBanner and inline therapeutic intervention panels
@@ -81,10 +85,29 @@ export function ChatWindow() {
   const { status: wsStatus, sendMultimodalTurn } = useWebSocket();
   const { t } = useTranslation();
 
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+
   const [isSpeaking, setIsSpeaking] = useState(false);
   const scrollBottomRef = useRef<HTMLDivElement | null>(null);
   const processedMessageIdsRef = useRef<Set<string>>(new Set());
   const hasInitializedRef = useRef<boolean>(false);
+
+  // Auto-load past chat logs from backend whenever authenticated
+  useEffect(() => {
+    async function hydrateHistory() {
+      if (isAuthenticated) {
+        try {
+          const logs = await ApiService.getChatHistory();
+          if (logs && logs.length > 0) {
+            useStressStore.getState().loadChatHistory(logs);
+          }
+        } catch (err) {
+          console.warn('[ChatWindow] Failed to load chat history:', err);
+        }
+      }
+    }
+    hydrateHistory();
+  }, [isAuthenticated]);
 
   // Auto-scroll to bottom on new messages, typing state, or intervention change
   useEffect(() => {
@@ -142,7 +165,7 @@ export function ChatWindow() {
 
   return (
     <div
-      className="flex flex-col h-full bg-slate-50/50 dark:bg-slate-950/40 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 overflow-hidden shadow-xs"
+      className="flex flex-col h-full bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-2xl overflow-hidden"
       role="main"
       aria-label={t.chat.assistantTitle}
     >
@@ -151,8 +174,8 @@ export function ChatWindow() {
         {/* Assistant Identity */}
         <div className="flex items-center gap-3 min-w-0">
           <div className="relative shrink-0">
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-blue-600 to-teal-500 flex items-center justify-center text-white font-bold shadow-xs">
-              <Sparkles className="h-4 w-4" />
+            <div className="h-10 w-10 rounded-2xl bg-gradient-to-tr from-teal-500 via-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold shadow-md">
+              <Sparkles className="h-4.5 w-4.5" />
             </div>
             {/* Online presence dot */}
             <span
@@ -181,9 +204,9 @@ export function ChatWindow() {
               <div
                 key={key}
                 title={`${meta.label} signal active`}
-                className={`hidden sm:flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/70 ${meta.activeClass}`}
+                className={`hidden sm:flex items-center gap-1 text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/70 ${meta.activeClass}`}
               >
-                <Icon className="h-2.5 w-2.5" />
+                <Icon className="h-3 w-3" />
                 {meta.label}
               </div>
             );
@@ -214,11 +237,11 @@ export function ChatWindow() {
                 ? 'Voice Responses On'
                 : 'Voice Responses Off'
             }
-            className={`flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border transition-colors cursor-pointer ${
+            className={`flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-full border transition-colors cursor-pointer ${
               isSpeaking
                 ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/70 dark:text-rose-300 border-rose-300 dark:border-rose-800 animate-pulse'
                 : isTtsEnabled
-                ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border-blue-200 dark:border-blue-800 hover:bg-blue-100'
+                ? 'bg-teal-50 text-teal-700 dark:bg-teal-950/60 dark:text-teal-300 border-teal-200 dark:border-teal-800 hover:bg-teal-100'
                 : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-200/70'
             }`}
           >
@@ -229,12 +252,12 @@ export function ChatWindow() {
               </>
             ) : isTtsEnabled ? (
               <>
-                <Volume2 className="h-2.5 w-2.5 text-blue-600 dark:text-blue-400" />
+                <Volume2 className="h-3 w-3 text-teal-600 dark:text-teal-400" />
                 <span className="hidden sm:inline">Voice On</span>
               </>
             ) : (
               <>
-                <VolumeX className="h-2.5 w-2.5 text-slate-400" />
+                <VolumeX className="h-3 w-3 text-slate-400" />
                 <span className="hidden sm:inline">Voice Off</span>
               </>
             )}
@@ -249,7 +272,7 @@ export function ChatWindow() {
                 ? 'warning'
                 : 'danger'
             }
-            className="text-[10px] px-2 py-0"
+            className="text-[10px] px-2.5 py-0.5 font-bold"
           >
             {stressEstimate.level === 'low'
               ? t.ambientStatus.low
@@ -264,7 +287,7 @@ export function ChatWindow() {
             variant={
               wsStatus === 'connected' ? 'success' : wsStatus === 'demo' ? 'accent' : 'secondary'
             }
-            className="text-[10px] gap-1 px-2 py-0"
+            className="text-[10px] gap-1 px-2.5 py-0.5 font-bold"
           >
             <Radio className="h-2.5 w-2.5" />
             {wsStatus === 'connected'
@@ -275,7 +298,7 @@ export function ChatWindow() {
           </Badge>
 
           {/* Private Session Indicator */}
-          <div className="hidden lg:flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-full border border-slate-200/70 dark:border-slate-700">
+          <div className="hidden lg:flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400 bg-slate-100/90 dark:bg-slate-800/90 px-3 py-0.5 rounded-full border border-slate-200/70 dark:border-slate-700">
             <Shield className="h-3 w-3 text-teal-600 dark:text-teal-400" />
             <span>{t.common.private}</span>
           </div>
@@ -291,20 +314,6 @@ export function ChatWindow() {
       >
         {/* Safety Banner (shown when triggered) */}
         <SafetyBanner />
-
-        {/* Inline Breathing Intervention */}
-        {activeIntervention === 'breathing' && (
-          <div className="my-2 animate-in fade-in zoom-in-95 duration-200">
-            <BreathingCircle />
-          </div>
-        )}
-
-        {/* Inline Grounding Intervention */}
-        {activeIntervention === 'grounding' && (
-          <div className="my-2 animate-in fade-in zoom-in-95 duration-200">
-            <GroundingExercise />
-          </div>
-        )}
 
         {/* Message List */}
         {messages.map((message) => (
@@ -323,6 +332,12 @@ export function ChatWindow() {
         <QuickSuggestions onSelectPrompt={handleSuggestionSelect} />
         <InputBar onSendMessage={sendMultimodalTurn} disabled={isAiTyping} />
       </footer>
+
+      {/* ── Centered Modal Interventions (Overlay z-[100]) ────────────── */}
+      <AnimatePresence>
+        {activeIntervention === 'breathing' && <BreathingCircle />}
+        {activeIntervention === 'grounding' && <GroundingExercise />}
+      </AnimatePresence>
     </div>
   );
 }

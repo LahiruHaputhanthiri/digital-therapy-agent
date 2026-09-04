@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { background: #ffffff; }
+body {
+  width: 720pt; height: 405pt; margin: 0; padding: 0;
+  font-family: Arial, sans-serif; display: flex;
+  position: relative; overflow: hidden; background: #F8FAFB;
+}
+.left-bar { position: absolute; top: 0; left: 0; width: 6pt; height: 100%; background: #0D4F4F; }
+.header { position: absolute; top: 12pt; left: 28pt; right: 28pt; border-bottom: 2pt solid #00B4D8; padding-bottom: 4pt; }
+.header h1 { font-size: 24pt; color: #0D4F4F; margin: 0; font-weight: bold; }
+.content {
+  position: absolute; top: 48pt; left: 28pt; right: 28pt; bottom: 20pt;
+  display: flex; gap: 14pt;
+}
+.col-left { flex: 1.15; display: flex; flex-direction: column; justify-content: space-between; }
+.col-right { flex: 0.85; display: flex; flex-direction: column; gap: 4pt; justify-content: center; }
+.col-right img { width: 100%; border-radius: 6pt; border: 1px solid #D0D8DD; box-shadow: 0 2pt 4pt rgba(0,0,0,0.04); }
+.caption { margin-top: 2pt; }
+.caption p { font-size: 10pt; color: #555555; text-align: center; margin: 0; font-weight: 500; }
+.demo-banner {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 4pt 8pt; background: #0D4F4F; border-radius: 4pt; margin-bottom: 4pt;
+}
+.demo-banner h2 { font-size: 11pt; color: #FFFFFF; font-weight: bold; margin: 0; text-transform: uppercase; letter-spacing: 0.5pt; }
+.demo-badge { font-size: 9pt; font-weight: bold; padding: 2pt 5pt; border-radius: 3pt; background: #00B4D8; color: #FFFFFF; }
+.steps-grid { display: flex; gap: 4pt; flex-wrap: wrap; }
+.step-chip {
+  flex: 1; min-width: 135pt; padding: 4pt 5pt;
+  background: #FFFFFF; border-radius: 4pt;
+  border: 1px solid #D0D8DD; border-left: 3pt solid #00B4D8;
+  display: flex; gap: 5pt; align-items: center;
+}
+.step-num { font-size: 9.5pt; font-weight: bold; color: #00B4D8; }
+.step-text { font-size: 9pt; color: #333333; margin: 0; line-height: 1.25; }
+.step-text b { color: #0D4F4F; }
+</style>
+</head>
+<body>
+<div class="left-bar"></div>
+<div class="header"><h1>Live Artefact Demonstration</h1></div>
+<div class="content">
+  <div class="col-left">
+    <div class="demo-banner">
+      <h2>Demonstration Execution Flow</h2>
+      <span class="demo-badge">LIVE DEMO &bull; 5 MINUTES</span>
+    </div>
+    <div class="steps-grid">
+      <div class="step-chip"><span class="step-num">01</span><p class="step-text"><b>Backend Services:</b> FastAPI &amp; ML Active</p></div>
+      <div class="step-chip"><span class="step-num">02</span><p class="step-text"><b>Application Login:</b> JWT Auth &amp; 3-Tier Roles</p></div>
+      <div class="step-chip"><span class="step-num">03</span><p class="step-text"><b>Camera &amp; Mic:</b> WebRTC &amp; Privacy Blur</p></div>
+      <div class="step-chip"><span class="step-num">04</span><p class="step-text"><b>Facial Emotion:</b> 7-Class Visual ML</p></div>
+      <div class="step-chip"><span class="step-num">05</span><p class="step-text"><b>Speech Emotion:</b> 40 MFCC Classifier</p></div>
+      <div class="step-chip"><span class="step-num">06</span><p class="step-text"><b>Multimodal Fusion:</b> Stress Gauge</p></div>
+      <div class="step-chip"><span class="step-num">07</span><p class="step-text"><b>Language Toggle:</b> EN / SI / TA i18n</p></div>
+      <div class="step-chip"><span class="step-num">08</span><p class="step-text"><b>Guided Support:</b> Empathy-First CBT</p></div>
+      <div class="step-chip"><span class="step-num">09</span><p class="step-text"><b>De-escalation:</b> Box Breathing Overlay</p></div>
+      <div class="step-chip"><span class="step-num">10</span><p class="step-text"><b>Admin Governance:</b> RBAC &amp; Logs</p></div>
+    </div>
+  </div>
+
+  <div class="col-right">
+    <div>
+      <img src="img/EVID-SS-080_box_breathing_interface.png">
+      <div class="caption"><p>Figure 9: Box Breathing De-escalation (EVID-SS-080)</p></div>
+    </div>
+    <div>
+      <img src="img/EVID-SS-120_admin_dashboard.png">
+      <div class="caption"><p>Figure 10: Admin Panel &amp; Governance (EVID-SS-120)</p></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

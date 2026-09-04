@@ -17,7 +17,6 @@ import {
 import {
   getStressLevelFromScore,
   INITIAL_MOOD_HISTORY,
-  INITIAL_SESSIONS,
 } from '@/lib/constants';
 
 interface StressStoreState {
@@ -47,6 +46,7 @@ interface StressStoreState {
   // Historical Records
   sessions: Session[];
   moodHistory: MoodRecord[];
+  rawLogs: import('@/types').ChatLogItem[];
 
   // Actions
   setTheme: (theme: 'light' | 'dark' | 'system') => void;
@@ -71,6 +71,8 @@ interface StressStoreState {
   addMoodRecord: (record: Omit<MoodRecord, 'id'>) => void;
   loadSession: (session: Session) => void;
   createNewSession: () => void;
+  loadChatHistory: (logs: import('@/types').ChatLogItem[]) => void;
+  setMessages: (messages: Message[]) => void;
   clearMessages: () => void;
   clearHistory: () => void;
 }
@@ -102,12 +104,31 @@ const DEFAULT_KEYSTROKE: KeystrokeMetrics = {
   lastMeasured: '2026-08-20T14:30:00.000Z',
 };
 
+function formatSessionDate(isoString?: string): string {
+  if (!isoString) return 'Recent';
+  try {
+    const date = new Date(isoString);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const isYesterday = date.toDateString() === yesterday.toDateString();
+
+    const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    if (isToday) return `Today, ${timeStr}`;
+    if (isYesterday) return `Yesterday, ${timeStr}`;
+    return `${date.toLocaleDateString([], { month: 'short', day: 'numeric' })}, ${timeStr}`;
+  } catch {
+    return 'Recent';
+  }
+}
+
 const INITIAL_MESSAGES: Message[] = [
   {
     id: 'msg-welcome-1',
     sender: 'assistant',
     content:
-      "Hello Alex. I'm your MindCare AI wellbeing assistant. How are you feeling today? We can chat, reflect on your week, or try a guided exercise whenever you need a calming moment.",
+      "Hello. I'm your MindCare AI wellbeing assistant. How are you feeling today? We can chat, reflect on your week, or try a guided exercise whenever you need a calming moment.",
     timestamp: '2026-08-20T14:30:00.000Z',
     stressSnapshot: { score: 38, level: 'moderate' },
     activeModalities: { text: true, audio: false, video: false, keystroke: true, history: true },
@@ -167,7 +188,7 @@ export const useStressStore = create<StressStoreState>((set, get) => ({
     userAcknowledged: false,
   },
 
-  sessions: INITIAL_SESSIONS,
+  sessions: [],
   moodHistory: INITIAL_MOOD_HISTORY,
 
   setTheme: (theme) => set({ theme }),
@@ -347,22 +368,60 @@ export const useStressStore = create<StressStoreState>((set, get) => ({
       ],
     })),
 
+  rawLogs: [],
+
   loadSession: (session) =>
-    set({
-      currentSessionId: session.id,
-      stressEstimate: {
-        level: session.avgStressLevel,
-        score: session.avgStressScore,
-        confidence: 0.9,
-        trend: 'stable',
-        lastUpdated: '2026-08-20T14:30:00.000Z',
-        disclaimer: `Viewing archive for "${session.title}".`,
-      },
+    set((state) => {
+      const matchingLog = state.rawLogs.find((l) => `sess-${l.id}` === session.id);
+      let sessionMessages: Message[] = state.messages;
+
+      if (matchingLog) {
+        const msgs: Message[] = [];
+        if (matchingLog.user_message && matchingLog.user_message.trim()) {
+          msgs.push({
+            id: `hist-u-${matchingLog.id}`,
+            sender: 'user',
+            content: matchingLog.user_message,
+            timestamp: matchingLog.timestamp || new Date().toISOString(),
+            activeModalities: { text: true, audio: false, video: false, keystroke: true, history: true },
+          });
+        }
+        if (matchingLog.ai_response && matchingLog.ai_response.trim()) {
+          msgs.push({
+            id: `hist-a-${matchingLog.id}`,
+            sender: 'assistant',
+            content: matchingLog.ai_response,
+            timestamp: matchingLog.timestamp || new Date().toISOString(),
+            stressSnapshot: {
+              score: session.avgStressScore,
+              level: session.avgStressLevel,
+            },
+            detectedEmotions: {
+              [session.dominantMood.toLowerCase()]: 85,
+            },
+            activeModalities: { text: true, audio: false, video: false, keystroke: true, history: true },
+          });
+        }
+        sessionMessages = msgs;
+      }
+
+      return {
+        currentSessionId: session.id,
+        messages: sessionMessages,
+        stressEstimate: {
+          level: session.avgStressLevel,
+          score: session.avgStressScore,
+          confidence: 0.95,
+          trend: 'stable',
+          lastUpdated: new Date().toISOString(),
+          disclaimer: `Viewing archive for "${session.title}".`,
+        },
+      };
     }),
 
   createNewSession: () =>
     set({
-      currentSessionId: `sess-${Date.now()}`,
+      currentSessionId: `sess-new-${Date.now()}`,
       messages: [
         {
           id: `msg-new-${Date.now()}`,
@@ -382,6 +441,109 @@ export const useStressStore = create<StressStoreState>((set, get) => ({
         userAcknowledged: false,
       },
     }),
+
+  loadChatHistory: (logs) => {
+    if (!logs || logs.length === 0) {
+      set({ sessions: [], rawLogs: [] });
+      return;
+    }
+
+    const restoredMessages: Message[] = [];
+    const dynamicSessions: Session[] = [];
+    const dynamicMoodHistory: MoodRecord[] = [];
+
+    // Chronological messages reconstruction
+    logs.forEach((log) => {
+      const rawScore = log.stress_score !== undefined && log.stress_score !== null ? log.stress_score : 0.35;
+      const normalizedScore = Math.round(rawScore <= 1.0 ? rawScore * 100 : rawScore);
+      const emotionLabel = log.detected_emotion || 'neutral';
+      const stressLvl = getStressLevelFromScore(normalizedScore);
+
+      if (log.user_message && log.user_message.trim()) {
+        restoredMessages.push({
+          id: `hist-u-${log.id}`,
+          sender: 'user',
+          content: log.user_message,
+          timestamp: log.timestamp || new Date().toISOString(),
+          activeModalities: { text: true, audio: false, video: false, keystroke: true, history: true },
+        });
+      }
+
+      if (log.ai_response && log.ai_response.trim()) {
+        restoredMessages.push({
+          id: `hist-a-${log.id}`,
+          sender: 'assistant',
+          content: log.ai_response,
+          timestamp: log.timestamp || new Date().toISOString(),
+          stressSnapshot: {
+            score: normalizedScore,
+            level: stressLvl,
+          },
+          detectedEmotions: {
+            [emotionLabel]: 85,
+          },
+          activeModalities: { text: true, audio: false, video: false, keystroke: true, history: true },
+        });
+      }
+
+      // Generate Session card item for sidebar
+      const cleanUserMsg = log.user_message ? log.user_message.replace(/^🎤\s*"?|"?$/g, '').trim() : '';
+      const sessionTitle = cleanUserMsg
+        ? cleanUserMsg.length > 36
+          ? `${cleanUserMsg.slice(0, 36)}...`
+          : cleanUserMsg
+        : `Therapy Check-in #${log.id}`;
+
+      const sessionSummary = log.ai_response
+        ? log.ai_response.length > 80
+          ? `${log.ai_response.slice(0, 80)}...`
+          : log.ai_response
+        : 'Reflective therapeutic check-in completed.';
+
+      const dominantMoodStr: 'Calm' | 'Neutral' | 'Stressed' | 'Low mood' =
+        normalizedScore <= 34 ? 'Calm' : normalizedScore <= 64 ? 'Neutral' : 'Stressed';
+
+      dynamicSessions.unshift({
+        id: `sess-${log.id}`,
+        title: sessionTitle,
+        date: formatSessionDate(log.timestamp),
+        durationMinutes: Math.max(4, Math.min(25, Math.round((log.user_message?.length || 30) / 8))),
+        summary: sessionSummary,
+        avgStressLevel: stressLvl,
+        avgStressScore: normalizedScore,
+        dominantMood: dominantMoodStr,
+        messageCount: 2,
+      });
+
+      // Construct dynamic mood history record
+      try {
+        const logDate = new Date(log.timestamp || Date.now());
+        const dayLabel = logDate.toLocaleDateString('en-US', { weekday: 'short' });
+        const dateStr = (log.timestamp || new Date().toISOString()).split('T')[0];
+
+        dynamicMoodHistory.push({
+          id: `mood-${log.id}`,
+          day: dayLabel,
+          date: dateStr,
+          moodScore: Math.max(1, Math.min(5, Math.round(5 - (normalizedScore / 25)))),
+          label: dominantMoodStr,
+          estimatedStress: normalizedScore,
+        });
+      } catch {
+        // Ignore date parsing issues
+      }
+    });
+
+    set({
+      rawLogs: logs,
+      messages: restoredMessages.length > 0 ? restoredMessages : undefined,
+      sessions: dynamicSessions,
+      moodHistory: dynamicMoodHistory.length > 0 ? dynamicMoodHistory.slice(-7) : undefined,
+      currentSessionId: dynamicSessions.length > 0 ? dynamicSessions[0].id : 'sess-current',
+    });
+  },
+
+  setMessages: (messages) => set({ messages }),
 
   clearMessages: () =>
     set({

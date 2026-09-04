@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { background: #ffffff; }
+body {
+  width: 720pt; height: 405pt; margin: 0; padding: 0;
+  font-family: Arial, sans-serif; display: flex;
+  position: relative; overflow: hidden; background: #F8FAFB;
+}
+.left-bar { position: absolute; top: 0; left: 0; width: 6pt; height: 100%; background: #0D4F4F; }
+.header { position: absolute; top: 12pt; left: 28pt; right: 28pt; border-bottom: 2pt solid #00B4D8; padding-bottom: 4pt; }
+.header h1 { font-size: 24pt; color: #0D4F4F; margin: 0; font-weight: bold; }
+.content {
+  position: absolute; top: 48pt; left: 28pt; right: 28pt; bottom: 20pt;
+  display: flex; gap: 14pt;
+}
+.col-left { flex: 1.1; display: flex; flex-direction: column; justify-content: space-between; }
+.col-right { flex: 0.9; display: flex; flex-direction: column; gap: 4pt; justify-content: center; }
+.col-right img { width: 100%; border-radius: 6pt; border: 1px solid #D0D8DD; box-shadow: 0 2pt 4pt rgba(0,0,0,0.04); }
+.caption { margin-top: 2pt; }
+.caption p { font-size: 10pt; color: #555555; text-align: center; margin: 0; font-weight: 500; }
+.fusion-box {
+  padding: 6pt 8pt; background: #E8F4F8; border-radius: 5pt;
+  border-left: 4pt solid #00B4D8;
+}
+.fusion-box h2 { font-size: 11.5pt; color: #0D4F4F; margin: 0 0 3pt 0; text-transform: uppercase; letter-spacing: 0.5pt; font-weight: bold; }
+.formula-line {
+  padding: 3pt 6pt; background: #FFFFFF; border-radius: 3pt;
+  border: 1px solid #BEE3F8; margin-bottom: 3pt;
+}
+.formula-line p {
+  font-family: Courier New, monospace; font-size: 10.5pt;
+  color: #0D4F4F; font-weight: bold; margin: 0;
+}
+.fusion-box ul { margin: 0; padding-left: 14pt; }
+.fusion-box li { font-size: 9.5pt; color: #333333; margin-bottom: 2pt; line-height: 1.25; }
+.weight-card {
+  padding: 5pt 8pt; background: #FFFFFF; border-radius: 5pt;
+  border: 1px solid #D0D8DD;
+}
+.weight-card h3 { font-size: 11pt; color: #0D4F4F; margin: 0 0 3pt 0; text-transform: uppercase; letter-spacing: 0.5pt; font-weight: bold; }
+.weights-grid { display: flex; gap: 4pt; flex-wrap: wrap; margin-bottom: 3pt; }
+.w-chip {
+  flex: 1; min-width: 48pt; padding: 2pt 3pt;
+  background: #F4F8FA; border-radius: 3pt; text-align: center;
+  border: 1px solid #E2E8F0;
+}
+.w-chip p { font-size: 8.5pt; color: #555555; margin: 0; }
+.w-chip b { color: #0D4F4F; font-size: 9.5pt; }
+.thresh-strip {
+  padding: 3pt 6pt; background: #FFF3E0; border-radius: 3pt;
+  border-left: 3pt solid #F77F00;
+}
+.thresh-strip p { font-size: 9.5pt; color: #5D4037; margin: 0; }
+</style>
+</head>
+<body>
+<div class="left-bar"></div>
+<div class="header"><h1>Multimodal Fusion &amp; Stress Estimation</h1></div>
+<div class="content">
+  <div class="col-left">
+    <div class="fusion-box">
+      <h2>Late Fusion Strategy &amp; Conflict Logic</h2>
+      <div class="formula-line">
+        <p>fused_prob[e] = 0.50 &times; P_face[e] + 0.50 &times; P_voice[e]</p>
+      </div>
+      <ul>
+        <li><b>Polar Conflict Detection:</b> Contradictory valences (e.g., Happy Face + Sad Voice) resolve to <i>"Uncertain"</i>.</li>
+        <li><b>Graceful Degradation:</b> Transparent single-modality passthrough when camera or mic is disabled.</li>
+        <li><b>Text-Only Fallback:</b> Default baseline state when sensors are absent.</li>
+      </ul>
+    </div>
+
+    <div class="weight-card">
+      <h3>Somatic Stress Index Weight Mapping</h3>
+      <div class="weights-grid">
+        <div class="w-chip"><p>Fear<br><b>0.90</b></p></div>
+        <div class="w-chip"><p>Angry<br><b>0.85</b></p></div>
+        <div class="w-chip"><p>Sad<br><b>0.75</b></p></div>
+        <div class="w-chip"><p>Disgust<br><b>0.65</b></p></div>
+        <div class="w-chip"><p>Uncertain<br><b>0.50</b></p></div>
+        <div class="w-chip"><p>Surprise<br><b>0.45</b></p></div>
+        <div class="w-chip"><p>Neutral<br><b>0.30</b></p></div>
+        <div class="w-chip"><p>Happy<br><b>0.15</b></p></div>
+      </div>
+      <div class="thresh-strip">
+        <p><b>Tri-Tier Stress Levels:</b> Low (&lt;0.35) | Moderate (0.35–0.69) | High (&ge;0.70)</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-right">
+    <div>
+      <img src="img/EVID-SS-050_stress_gauge.png">
+      <div class="caption"><p>Figure 4: Real-Time Somatic Stress Gauge (EVID-SS-050)</p></div>
+    </div>
+    <div>
+      <img src="img/EVID-SS-032_emotion_distribution.png">
+      <div class="caption"><p>Figure 5: 7-Class Emotion Probability Telemetry (EVID-SS-032)</p></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

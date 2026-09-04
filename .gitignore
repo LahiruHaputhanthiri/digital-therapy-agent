@@ -19,6 +19,13 @@ __pycache__/
 out/
 build/
 dist/
+*.tsbuildinfo
+
+# Databases & Local SQLite Persistence
+*.db
+*.sqlite
+*.sqlite3
+backend/therapy_agent.db
 
 # Environment Variables
 .env
@@ -35,13 +42,20 @@ dist/
 .DS_Store
 Thumbs.db
 
-# Logs
+# Logs & Temp Files
 logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+*.tmp
+*.bak
+temp_*
+presentation/tmp/
 
 # Vercel
 .vercel/
+
+# Academic Dissertation Document (Protected against Turnitin duplicate web-indexing)
+st20360354*.docx

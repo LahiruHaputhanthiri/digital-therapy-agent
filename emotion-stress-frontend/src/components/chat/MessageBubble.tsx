@@ -57,7 +57,7 @@ function SuggestedActionChip({ action }: { action: InterventionType }) {
       type="button"
       onClick={meta.onClick}
       className={cn(
-        'mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-150 shadow-2xs cursor-pointer',
+        'mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all duration-150 shadow-2xs cursor-pointer',
         meta.className
       )}
     >
@@ -68,13 +68,14 @@ function SuggestedActionChip({ action }: { action: InterventionType }) {
 }
 
 /**
- * MessageBubble - Phase 4 Chat Interface
- * Renders User, Assistant, and System conversation messages with:
- * - Distinct, accessible bubble styling per sender
- * - Timestamp and active modality indicator icons
- * - Optional quick-action chips for suggested therapeutic interventions
- * - Non-intrusive stress snapshot annotations on assistant messages
- * - System message styled as centered informational card
+ * MessageBubble — Calm Intelligence Chat Bubble.
+ *
+ * Features:
+ * - Distinct, high-legibility bubble styling for Assistant, User, and System messages
+ * - Preserved `GraphemeTypewriter` for Unicode-safe Sinhala/Tamil/English rendering
+ * - Modality attribution badges (Mic, Camera, Keystroke)
+ * - TTS speech playback with animated audio indicators
+ * - Non-intrusive stress snapshot annotations and quick-action intervention chips
  */
 export function MessageBubble({ message }: MessageBubbleProps) {
   const isAssistant = message.sender === 'assistant';
@@ -97,17 +98,17 @@ export function MessageBubble({ message }: MessageBubbleProps) {
     }
   };
 
-  // --- System messages: centered informational strip ---
+  // --- System messages: centered informational pill ---
   if (isSystem) {
     return (
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.3 }}
-        className="flex justify-center py-1"
+        className="flex justify-center py-1.5"
       >
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/60 text-[11px] text-slate-500 dark:text-slate-400">
-          <Info className="h-3 w-3 shrink-0 text-blue-500" />
+        <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100/90 dark:bg-slate-800/80 backdrop-blur-md border border-slate-200/70 dark:border-slate-700/60 text-[11px] text-slate-500 dark:text-slate-400 shadow-2xs">
+          <Info className="h-3 w-3 shrink-0 text-teal-500" />
           <span>{message.content}</span>
         </div>
       </motion.div>
@@ -116,35 +117,35 @@ export function MessageBubble({ message }: MessageBubbleProps) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25, ease: 'easeOut' }}
-      className={cn('flex items-start gap-3 py-1.5', isUser ? 'justify-end' : 'justify-start')}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
+      className={cn('flex items-start gap-3 py-2', isUser ? 'justify-end' : 'justify-start')}
     >
       {/* Assistant Avatar */}
       {isAssistant && (
         <div
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-400 mt-1 shadow-xs border border-blue-200/50 dark:border-blue-800/50"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-teal-500 to-blue-600 text-white mt-1 shadow-md border border-teal-400/30"
           aria-hidden="true"
         >
-          <Bot className="h-4 w-4" />
+          <Bot className="h-4.5 w-4.5" />
         </div>
       )}
 
       {/* Bubble Container */}
       <div
         className={cn(
-          'flex flex-col max-w-[85%] sm:max-w-[75%]',
+          'flex flex-col max-w-[88%] sm:max-w-[78%]',
           isUser ? 'items-end' : 'items-start'
         )}
       >
         {/* Main Content Bubble */}
         <div
           className={cn(
-            'px-4 py-3 rounded-2xl text-sm leading-relaxed shadow-xs',
+            'px-4.5 py-3.5 rounded-3xl text-sm leading-relaxed shadow-sm transition-all',
             isUser
-              ? 'bg-blue-600 text-white rounded-tr-xs dark:bg-blue-600 dark:text-white'
-              : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-tl-xs border border-slate-200/80 dark:border-slate-700/80'
+              ? 'bg-gradient-to-tr from-teal-600 via-cyan-600 to-blue-600 text-white rounded-tr-xs shadow-md'
+              : 'bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl text-slate-800 dark:text-slate-100 rounded-tl-xs border border-slate-200/80 dark:border-slate-700/80 shadow-md'
           )}
         >
           <GraphemeTypewriter text={message.content} />
@@ -162,11 +163,11 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         {/* Footer: Timestamp, Stress Snapshot, Active Modality Icons */}
         <div
           className={cn(
-            'flex items-center gap-2 mt-1.5 px-1 text-[10px] text-slate-500 dark:text-slate-400',
+            'flex items-center gap-2 mt-1.5 px-1.5 text-[10px] text-slate-500 dark:text-slate-400',
             isUser ? 'flex-row-reverse' : 'flex-row'
           )}
         >
-          <span suppressHydrationWarning className="tabular-nums">
+          <span suppressHydrationWarning className="tabular-nums font-medium">
             {formatTime(message.timestamp)}
           </span>
 
@@ -175,12 +176,12 @@ export function MessageBubble({ message }: MessageBubbleProps) {
             <button
               type="button"
               onClick={handleToggleSpeech}
-              title={isPlaying ? 'Stop speaking this response' : 'Listen to this response'}
-              aria-label={isPlaying ? 'Stop speaking this response' : 'Listen to this response'}
-              className={`inline-flex items-center gap-0.5 px-1 py-0.5 rounded-md text-[10px] transition-colors cursor-pointer ${
+              title={isPlaying ? 'Stop speaking' : 'Listen to this response'}
+              aria-label={isPlaying ? 'Stop speaking' : 'Listen to this response'}
+              className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] transition-colors cursor-pointer ${
                 isPlaying
-                  ? 'text-rose-600 bg-rose-50 dark:bg-rose-950/60 dark:text-rose-300 font-medium'
-                  : 'text-slate-400 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-blue-400'
+                  ? 'bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300 font-semibold'
+                  : 'hover:text-teal-600 dark:hover:text-teal-400 hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
             >
               {isPlaying ? (
@@ -190,69 +191,52 @@ export function MessageBubble({ message }: MessageBubbleProps) {
                 </>
               ) : (
                 <>
-                  <Volume2 className="h-2.5 w-2.5" />
-                  <span className="hidden sm:inline">Listen</span>
+                  <Volume2 className="h-3 w-3" />
+                  <span>Listen</span>
                 </>
               )}
             </button>
           )}
 
-          {/* Stress snapshot annotation on assistant messages */}
+          {/* Stress snapshot indicator on assistant messages */}
           {isAssistant && message.stressSnapshot && (
             <span
               className={cn(
-                'flex items-center gap-1 font-medium',
-                message.stressSnapshot.level === 'low'
-                  ? 'text-emerald-600 dark:text-emerald-400'
-                  : message.stressSnapshot.level === 'moderate'
-                  ? 'text-amber-600 dark:text-amber-400'
-                  : 'text-rose-600 dark:text-rose-400'
+                'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-semibold border',
+                message.stressSnapshot.level === 'low' &&
+                  'bg-teal-50 text-teal-700 border-teal-200/60 dark:bg-teal-950/40 dark:text-teal-300',
+                message.stressSnapshot.level === 'moderate' &&
+                  'bg-amber-50 text-amber-700 border-amber-200/60 dark:bg-amber-950/40 dark:text-amber-300',
+                message.stressSnapshot.level === 'high' &&
+                  'bg-rose-50 text-rose-700 border-rose-200/60 dark:bg-rose-950/40 dark:text-rose-300'
               )}
             >
-              •
-              <span>
-                {message.stressSnapshot.level === 'low'
-                  ? 'Low'
-                  : message.stressSnapshot.level === 'moderate'
-                  ? 'Moderate'
-                  : 'High'}{' '}
-                stress est. ({message.stressSnapshot.score}%)
-              </span>
+              Stress {Math.round(message.stressSnapshot.score)}%
             </span>
           )}
 
-          {/* Active Modality Icons on user messages */}
+          {/* Active modality indicator icons on user messages */}
           {isUser && message.activeModalities && (
-            <div className="flex items-center gap-1" aria-label="Active signal modalities">
+            <div className="flex items-center gap-1 text-slate-400 dark:text-slate-500">
               {message.activeModalities.audio && (
-                <span aria-label="Voice signal active">
-                  <Mic className="h-3 w-3 text-teal-500 dark:text-teal-400" />
+                <span title="Audio turn (SER + STT)">
+                  <Mic className="h-3 w-3 text-teal-500" />
                 </span>
               )}
               {message.activeModalities.video && (
-                <span aria-label="Facial signal active">
-                  <Camera className="h-3 w-3 text-blue-500 dark:text-blue-400" />
+                <span title="Video turn (DenseNet FER)">
+                  <Camera className="h-3 w-3 text-blue-500" />
                 </span>
               )}
               {message.activeModalities.keystroke && (
-                <span aria-label="Keystroke dynamics active">
-                  <Keyboard className="h-3 w-3 text-purple-500 dark:text-purple-400" />
+                <span title="Keystroke dynamics active">
+                  <Keyboard className="h-3 w-3 text-purple-500" />
                 </span>
               )}
             </div>
           )}
         </div>
       </div>
-
-      {/* User Avatar */}
-      {isUser && (
-        <div
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-200 mt-1 shadow-xs border border-slate-300/50 dark:border-slate-700/50"
-          aria-hidden="true"
-        >
-          <User className="h-4 w-4" />
-        </div>
-      )}
     </motion.div>
   );
 }

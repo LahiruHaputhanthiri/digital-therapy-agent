@@ -36,7 +36,7 @@ export interface WebSocketCallbacks {
     safety?: SafetyRiskAssessment;
   }) => void;
   onSafetyAlert?: (safety: SafetyRiskAssessment) => void;
-  onError?: (error: Error) => void;
+  onError?: (error: Error | string) => void;
 }
 
 /**
@@ -147,8 +147,8 @@ export class MultimodalWebSocketClient {
         }
 
         try {
-          const message: ServerMessage = JSON.parse(event.data);
-          this.handleServerMessage(message);
+          const rawMessage = JSON.parse(event.data);
+          this.handleServerMessage(rawMessage);
         } catch (err) {
           console.warn('[WS] Failed to parse incoming server message:', err);
         }
@@ -159,6 +159,7 @@ export class MultimodalWebSocketClient {
           return;
         }
         console.warn('[WS] Connection error encountered');
+        this.callbacks.onError?.('WebSocket transport error encountered');
       };
 
       socket.onclose = () => {
@@ -168,6 +169,7 @@ export class MultimodalWebSocketClient {
 
         this.stopHeartbeat();
         this.ws = null;
+        this.callbacks.onError?.('WebSocket connection closed');
 
         if (!this.isManuallyDisconnected) {
           this.setStatus('reconnecting');
@@ -179,6 +181,7 @@ export class MultimodalWebSocketClient {
       };
     } catch (err) {
       console.warn('[WS] Socket initialization error:', err);
+      this.callbacks.onError?.('Socket initialization error');
       if (connectionId === this.currentConnectionId) {
         this.ws = null;
         if (!this.isManuallyDisconnected) {
@@ -249,25 +252,32 @@ export class MultimodalWebSocketClient {
     }
   }
 
-  private handleServerMessage(msg: ServerMessage) {
-    switch (msg.type) {
+  private handleServerMessage(rawMsg: any) {
+    if (!rawMsg || typeof rawMsg !== 'object') return;
+    const msgType = String(rawMsg.type || '').toUpperCase();
+
+    switch (msgType) {
       case 'STREAM_TOKEN':
-        this.callbacks.onToken?.(msg.token, msg.messageId);
+        this.callbacks.onToken?.(rawMsg.token, rawMsg.messageId);
         break;
       case 'AI_REPLY':
-        this.callbacks.onAiReply?.(msg);
+        this.callbacks.onAiReply?.(rawMsg);
         break;
       case 'METRICS_UPDATE':
-        this.callbacks.onMetricsUpdate?.(msg);
+        this.callbacks.onMetricsUpdate?.(rawMsg);
         break;
       case 'SAFETY_ALERT':
-        this.callbacks.onSafetyAlert?.(msg.safety);
+        this.callbacks.onSafetyAlert?.(rawMsg.safety);
         break;
       case 'PONG':
         // Heartbeat response acknowledged
         break;
       case 'ERROR':
-        console.warn('[WS Server Error Notice]:', msg.message);
+        console.warn('[WS Server Error Notice]:', rawMsg.message);
+        this.callbacks.onError?.(rawMsg.message || 'Server encountered an error processing the request.');
+        break;
+      default:
+        console.warn('[WS Unknown Message Type]:', rawMsg);
         break;
     }
   }

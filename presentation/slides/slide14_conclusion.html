@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { background: #ffffff; }
+body {
+  width: 720pt; height: 405pt; margin: 0; padding: 0;
+  font-family: Arial, sans-serif; display: flex;
+  position: relative; overflow: hidden; background: #F8FAFB;
+}
+.left-bar { position: absolute; top: 0; left: 0; width: 6pt; height: 100%; background: #0D4F4F; }
+.header { position: absolute; top: 12pt; left: 28pt; right: 28pt; border-bottom: 2pt solid #00B4D8; padding-bottom: 4pt; }
+.header h1 { font-size: 24pt; color: #0D4F4F; margin: 0; font-weight: bold; }
+.content {
+  position: absolute; top: 48pt; left: 28pt; right: 28pt; bottom: 20pt;
+  display: flex; gap: 14pt;
+}
+.col-left { flex: 1.2; display: flex; flex-direction: column; }
+.col-right { flex: 1.0; display: flex; flex-direction: column; justify-content: space-between; gap: 8pt; }
+
+.outcomes-card {
+  height: 100%; padding: 8pt 12pt; background: #FFFFFF; border-radius: 6pt;
+  border: 1px solid #D0D8DD; border-top: 3.5pt solid #0D4F4F;
+  box-shadow: 0 2pt 4pt rgba(0,0,0,0.03);
+}
+.outcomes-card h2 { font-size: 12pt; color: #0D4F4F; margin: 0 0 6pt 0; text-transform: uppercase; letter-spacing: 0.5pt; font-weight: bold; }
+.outcomes-card ul { margin: 0; padding-left: 14pt; }
+.outcomes-card li { font-size: 9.5pt; color: #333333; margin-bottom: 3.5pt; line-height: 1.3; }
+.outcomes-card b { color: #111111; }
+
+.finding-card {
+  flex: 1; padding: 8pt 12pt; background: #FFF8E1; border-radius: 6pt;
+  border: 1px solid #FFE082; border-left: 4pt solid #FFB300;
+  box-shadow: 0 2pt 4pt rgba(0,0,0,0.02);
+  display: flex; flex-direction: column; justify-content: center;
+}
+.finding-card h2 { font-size: 11.5pt; color: #E65100; margin: 0 0 4pt 0; text-transform: uppercase; letter-spacing: 0.5pt; font-weight: bold; }
+.finding-card p { font-size: 10pt; color: #5D4037; margin: 0; line-height: 1.35; }
+
+.takeaway-card {
+  flex: 1; padding: 10pt 12pt; background: #0D4F4F; border-radius: 6pt;
+  border-left: 4pt solid #00B4D8;
+  box-shadow: 0 3pt 6pt rgba(13,79,79,0.15);
+  display: flex; flex-direction: column; justify-content: center;
+}
+.takeaway-card h2 { font-size: 11.5pt; color: #A0D2DB; margin: 0 0 4pt 0; text-transform: uppercase; letter-spacing: 0.5pt; font-weight: bold; }
+.takeaway-card p { font-size: 11pt; color: #FFFFFF; margin: 0; line-height: 1.4; font-weight: 500; }
+.takeaway-card b { color: #00B4D8; }
+</style>
+</head>
+<body>
+<div class="left-bar"></div>
+<div class="header"><h1>Conclusion</h1></div>
+<div class="content">
+  <div class="col-left">
+    <div class="outcomes-card">
+      <h2>Key Project Outcomes</h2>
+      <ul>
+        <li><b>Trilingual &amp; Multimodal Companion:</b> Developed an accessible, privacy-conscious AI-based wellness platform.</li>
+        <li><b>Affective Sensing:</b> Integrated facial and speech emotion recognition to estimate emotional states.</li>
+        <li><b>Multimodal Late Fusion:</b> Combined visual and acoustic probability distributions with conflict logic.</li>
+        <li><b>Constrained CBT Guidance:</b> Implemented a 5-stage CBT state machine with deterministic local fallback.</li>
+        <li><b>Cultural Localization:</b> Delivered English, Sinhala, and Tamil accessibility with speech interaction.</li>
+        <li><b>Privacy-Conscious Architecture:</b> Enforced in-memory media processing and user consent controls.</li>
+        <li><b>Rigorous Verification:</b> Validated core system functionality through <b>13 / 13 automated tests passed</b>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="col-right">
+    <div class="finding-card">
+      <h2>Key Finding</h2>
+      <p>The empirical evaluation demonstrated the feasibility of combining multimodal emotion recognition with guided non-clinical wellness support, while also identifying limitations in individual model performance, environmental robustness and multimodal benchmark evaluation.</p>
+    </div>
+
+    <div class="takeaway-card">
+      <h2>Final Takeaway</h2>
+      <p><b>MindCare</b> demonstrates a practical foundation for an accessible, multilingual and safety-conscious AI-assisted wellness companion.</p>
+    </div>
+  </div>
+</div>
+</body>
+</html>

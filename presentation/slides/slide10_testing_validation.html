@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { background: #ffffff; }
+body {
+  width: 720pt; height: 405pt; margin: 0; padding: 0;
+  font-family: Arial, sans-serif; display: flex;
+  position: relative; overflow: hidden; background: #F8FAFB;
+}
+.left-bar { position: absolute; top: 0; left: 0; width: 6pt; height: 100%; background: #0D4F4F; }
+.header { position: absolute; top: 12pt; left: 28pt; right: 28pt; border-bottom: 2pt solid #00B4D8; padding-bottom: 4pt; }
+.header h1 { font-size: 24pt; color: #0D4F4F; margin: 0; font-weight: bold; }
+.content {
+  position: absolute; top: 48pt; left: 28pt; right: 28pt; bottom: 20pt;
+  display: flex; gap: 14pt;
+}
+.col-left { flex: 1.05; display: flex; flex-direction: column; justify-content: space-between; }
+.col-right { flex: 0.95; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+.col-right img { width: 100%; max-height: 250pt; object-fit: contain; border-radius: 6pt; border: 1px solid #333333; box-shadow: 0 2pt 5pt rgba(0,0,0,0.1); }
+.caption { margin-top: 4pt; width: 100%; }
+.caption p { font-size: 9.5pt; color: #555555; text-align: center; margin: 0; font-weight: 500; }
+.pass-banner {
+  padding: 6pt 10pt; background: #E8F5E9; border-radius: 5pt;
+  border-left: 4.5pt solid #2ECC71; border: 1px solid #C8E6C9;
+  border-left: 4.5pt solid #2ECC71;
+}
+.pass-banner h2 { font-size: 20pt; color: #1B5E20; margin: 0; font-weight: bold; }
+.pass-banner p { font-size: 10pt; color: #2E7D32; margin: 2pt 0 0 0; font-weight: bold; }
+.val-card {
+  padding: 6pt 10pt; background: #FFFFFF; border-radius: 4pt;
+  border: 1px solid #D0D8DD;
+}
+.val-card h3 { font-size: 11pt; color: #0D4F4F; margin: 0 0 3pt 0; text-transform: uppercase; letter-spacing: 0.5pt; font-weight: bold; }
+.val-card ul { margin: 0; padding-left: 14pt; }
+.val-card li { font-size: 9.5pt; color: #333333; margin-bottom: 2pt; line-height: 1.25; }
+.val-card b { color: #0D4F4F; }
+.scope-note {
+  padding: 4pt 8pt; background: #E8F4F8; border-radius: 3pt; border-left: 3pt solid #00B4D8;
+}
+.scope-note p { font-size: 9pt; color: #0D4F4F; margin: 0; }
+</style>
+</head>
+<body>
+<div class="left-bar"></div>
+<div class="header"><h1>Testing &amp; Empirical Validation</h1></div>
+<div class="content">
+  <div class="col-left">
+    <div class="pass-banner">
+      <h2>13 / 13 AUTOMATED TESTS PASSED</h2>
+      <p>100% Pass Rate across Integration &amp; Security Test Suite</p>
+    </div>
+
+    <div class="val-card">
+      <h3>Verified System Capabilities</h3>
+      <ul>
+        <li><b>Authentication &amp; JWT:</b> 24h HS256 lifecycle &amp; identity resolution (/auth/me).</li>
+        <li><b>3-Tier RBAC Guards:</b> User, Admin, Super Admin 403 authorization blocks.</li>
+        <li><b>Database Behaviour:</b> SQLite schema integrity &amp; cascading deletion.</li>
+        <li><b>Chat Isolation:</b> User-scoped queries preventing cross-tenant leakage.</li>
+        <li><b>WebSocket Reliability:</b> Heartbeat monitor &amp; non-blocking queues.</li>
+        <li><b>ML Health Checks:</b> Facial, vocal &amp; tabular weights loaded successfully.</li>
+      </ul>
+    </div>
+
+    <div class="scope-note">
+      <p><b>Rigorous Distinction:</b> Automated tests validate system integration; ML accuracy is verified on held-out test partitions (FER-2013 &amp; RAVDESS).</p>
+    </div>
+  </div>
+
+  <div class="col-right">
+    <img src="img/EVID-SS-140_test_execution.png">
+    <div class="caption"><p>Figure 8: Automated Test Suite Terminal Output (EVID-SS-140)</p></div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,4 +1,4 @@
-import { Message, MultimodalPayload, Session, StressEstimate, UserProfile } from '@/types';
+import { MultimodalPayload, Session, StressEstimate, UserProfile } from '@/types';
 import { useStressStore } from '@/store/useStressStore';
 
 const RAW_API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -140,7 +140,9 @@ export const ApiService = {
    */
   async getSessions(): Promise<Session[]> {
     try {
-      const res = await fetch(`${API_BASE_URL}/therapy/sessions`);
+      const res = await fetch(`${API_BASE_URL}/therapy/sessions`, {
+        headers: getAuthHeaders(),
+      });
       if (!res.ok) throw new Error('Failed to fetch sessions');
       return await res.json();
     } catch {
@@ -155,7 +157,7 @@ export const ApiService = {
     try {
       const res = await fetch(`${API_BASE_URL}/user/profile`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(profile),
       });
       return res.ok;
@@ -163,7 +165,206 @@ export const ApiService = {
       return false;
     }
   },
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Authentication & Role-Based Access Control (RBAC) API Methods
+  // ──────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Register a new user or administrative account
+   */
+  async register(payload: import('@/types').RegisterPayload): Promise<import('@/types').AuthUser> {
+    const res = await fetch(`${API_BASE_URL}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.detail || `Registration failed (${res.status})`);
+    }
+    return await res.json();
+  },
+
+  /**
+   * Authenticate user credentials and retrieve JWT token
+   */
+  async login(payload: import('@/types').LoginPayload): Promise<import('@/types').AuthTokenResponse> {
+    const res = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.detail || 'Invalid email or password.');
+    }
+    return await res.json();
+  },
+
+  /**
+   * Authenticate or register via Google OAuth 2.0 credential token
+   */
+  async loginWithGoogle(credential: string): Promise<import('@/types').AuthTokenResponse> {
+    const res = await fetch(`${API_BASE_URL}/auth/google`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ credential }),
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.detail || 'Google sign-in failed. Please try again.');
+    }
+    return await res.json();
+  },
+
+  /**
+   * Fetch currently logged-in user's profile and role claims
+   */
+  async getMe(): Promise<import('@/types').AuthUser> {
+    const res = await fetch(`${API_BASE_URL}/auth/me`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    });
+    if (!res.ok) {
+      throw new Error(`Failed to authenticate session (${res.status})`);
+    }
+    return await res.json();
+  },
+
+  /**
+   * Update authenticated user profile (username, password, avatar)
+   */
+  async updateAuthProfile(payload: import('@/types').UpdateProfilePayload): Promise<import('@/types').AuthUser> {
+    const res = await fetch(`${API_BASE_URL}/auth/me`, {
+      method: 'PUT',
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.detail || 'Failed to update profile.');
+    }
+    return await res.json();
+  },
+
+  /**
+   * Permanently delete authenticated user account and associated chat telemetry
+   */
+  async deleteAccount(): Promise<{ status: string; message: string }> {
+    const res = await fetch(`${API_BASE_URL}/auth/me`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.detail || 'Failed to delete account.');
+    }
+    return await res.json();
+  },
+
+  /**
+   * Retrieve list of all users (Admin & Super Admin only)
+   */
+  async getAdminUsers(): Promise<import('@/types').AuthUser[]> {
+    const res = await fetch(`${API_BASE_URL}/auth/admin/users`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.detail || 'Access denied: Admin privileges required.');
+    }
+    return await res.json();
+  },
+
+  /**
+   * Provision a new Administrator account (Super Admin only)
+   */
+  async createAdmin(payload: import('@/types').CreateAdminPayload): Promise<import('@/types').AuthUser> {
+    const res = await fetch(`${API_BASE_URL}/admin/create-admin`, {
+      method: 'POST',
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.detail || 'Failed to create administrator account.');
+    }
+    return await res.json();
+  },
+
+  /**
+   * Retrieve platform telemetry and server statistics (Super Admin only)
+   */
+  async getSystemStats(): Promise<import('@/types').SystemStats> {
+    const res = await fetch(`${API_BASE_URL}/super-admin/system-stats`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.detail || 'Failed to fetch platform metrics.');
+    }
+    return await res.json();
+  },
+
+  /**
+   * Persist a completed multimodal chat turn to SQLite database
+   */
+  async saveChatTurn(payload: import('@/types').SaveChatTurnPayload): Promise<import('@/types').ChatLogItem | null> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/chat/save`, {
+        method: 'POST',
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        // If not authenticated, silently skip persistence
+        if (res.status === 401) return null;
+        throw new Error(`Failed to save chat log: ${res.status}`);
+      }
+      return await res.json();
+    } catch (err) {
+      console.warn('[ApiService] Failed to save chat turn:', err);
+      return null;
+    }
+  },
+
+  /**
+   * Retrieve past chat history for the authenticated user
+   */
+  async getChatHistory(): Promise<import('@/types').ChatLogItem[]> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/chat/history`, {
+        method: 'GET',
+        headers: getAuthHeaders(),
+      });
+      if (!res.ok) {
+        if (res.status === 401) return [];
+        throw new Error(`Failed to fetch chat history: ${res.status}`);
+      }
+      return await res.json();
+    } catch (err) {
+      console.warn('[ApiService] Failed to fetch chat history:', err);
+      return [];
+    }
+  },
 };
+
+/**
+ * Automatically inject JWT Bearer Authorization header if present
+ */
+function getAuthHeaders(customHeaders: Record<string, string> = {}): Record<string, string> {
+  const headers: Record<string, string> = { ...customHeaders };
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('mindcare_auth_token');
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+  }
+  return headers;
+}
 
 function getMockResponse(input: string, language: string = 'en'): string {
   const lower = input.toLowerCase();

@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono, Noto_Sans_Sinhala, Noto_Sans_Tamil } from 'next/font/google';
+import { CursorGlow } from '@/components/ui/CursorGlow';
+import { BreathingBackground } from '@/components/ui/BreathingBackground';
 import './globals.css';
 
 const geistSans = Geist({
@@ -101,7 +103,7 @@ export default function RootLayout({
         {/* Blocking theme script — must run before React to prevent FOUT */}
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body className="min-h-full flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-200">
+      <body className="min-h-full flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-200 relative selection:bg-teal-500/20 selection:text-teal-900 dark:selection:text-teal-200">
         {/* Skip-to-content link for screen reader & keyboard accessibility */}
         <a
           href="#main-content"
@@ -110,7 +112,13 @@ export default function RootLayout({
           Skip to main content
         </a>
 
-        <div id="main-content" className="flex-1 flex flex-col">
+        {/* Ambient Respiratory Breathing Background (Visual biofeedback & calming gradient) */}
+        <BreathingBackground />
+
+        {/* Bioluminescent Calming Cursor Glow Follower */}
+        <CursorGlow />
+
+        <div id="main-content" className="flex-1 flex flex-col relative z-0">
           {children}
         </div>
       </body>

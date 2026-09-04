@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { DashboardShell } from '@/components/layout/DashboardShell';
+import { HomeClient } from '@/components/home/HomeClient';
 
 /**
  * Page-level metadata — overrides root layout metadata for the home page.
@@ -11,13 +11,10 @@ export const metadata: Metadata = {
 };
 
 /**
- * HomePage — Entry point for the MindCare dashboard application.
- * Renders the full 3-panel DashboardShell which orchestrates:
- * - Sidebar (profile, mood history, session log) on desktop
- * - ChatWindow (conversational interface + inline interventions) center
- * - Right panel (stress gauge, emotion bars, sensor feeds, privacy controls)
- * - Mobile tabbed navigation for viewports < 1024px
+ * HomePage — Entry point for MindCare.
+ * Automatically presents the professional Landing Page for unauthenticated visitors,
+ * and seamlessly transitions to the full DashboardShell upon user authentication.
  */
 export default function HomePage() {
-  return <DashboardShell />;
+  return <HomeClient />;
 }

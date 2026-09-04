@@ -20,6 +20,8 @@ export function useWebSocket() {
   const [status, setStatus] = useState<ConnectionStatus>('connecting');
   const clientRef = useRef<MultimodalWebSocketClient | null>(null);
   const callbacksRef = useRef<WebSocketCallbacks>({});
+  const lastPromptRef = useRef<string>('');
+  const watchdogTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const updateStreamingMessage = useStressStore((state) => state.updateStreamingMessage);
   const addMessage = useStressStore((state) => state.addMessage);
@@ -34,17 +36,35 @@ export function useWebSocket() {
   callbacksRef.current = {
     onStatusChange: (newStatus) => {
       setStatus(newStatus);
+      if (newStatus === 'disconnected' || newStatus === 'reconnecting') {
+        if (watchdogTimerRef.current) {
+          clearTimeout(watchdogTimerRef.current);
+          watchdogTimerRef.current = null;
+        }
+        if (useStressStore.getState().isAiTyping) {
+          setAiTyping(false);
+        }
+      }
     },
     onToken: (token, messageId) => {
       updateStreamingMessage(messageId, token);
     },
     onAiReply: (data) => {
+      if (watchdogTimerRef.current) {
+        clearTimeout(watchdogTimerRef.current);
+        watchdogTimerRef.current = null;
+      }
       setAiTyping(false);
+      const userText = data.transcription && data.transcription.trim()
+        ? `🎤 "${data.transcription.trim()}"`
+        : lastPromptRef.current || '🎤 [Voice message]';
+
       if (data.transcription && data.transcription.trim()) {
         updateLastUserMessageContent(`🎤 "${data.transcription.trim()}"`);
-      } else {
+      } else if (!lastPromptRef.current) {
         updateLastUserMessageContent(`🎤 [Voice message]`);
       }
+
       addMessage({
         sender: 'assistant',
         content: data.replyText,
@@ -52,6 +72,16 @@ export function useWebSocket() {
         detectedEmotions: data.detectedEmotions,
         activeModalities: data.activeModalities,
       });
+
+      // Automatically persist completed turn to SQLite database
+      const topEmotion = data.detectedEmotions ? Object.keys(data.detectedEmotions)[0] : 'neutral';
+      const stressVal = data.stressSnapshot?.score !== undefined ? data.stressSnapshot.score / 100 : 0.35;
+      ApiService.saveChatTurn({
+        user_message: userText,
+        ai_response: data.replyText,
+        detected_emotion: topEmotion,
+        stress_score: stressVal,
+      }).catch((err) => console.warn('[useWebSocket] Failed to auto-persist turn:', err));
     },
     onMetricsUpdate: (data) => {
       updateStressEstimate(data.stress);
@@ -62,6 +92,16 @@ export function useWebSocket() {
     },
     onSafetyAlert: (safety) => {
       triggerSafetyProtocol(safety);
+    },
+    onError: (error) => {
+      if (watchdogTimerRef.current) {
+        clearTimeout(watchdogTimerRef.current);
+        watchdogTimerRef.current = null;
+      }
+      if (useStressStore.getState().isAiTyping) {
+        setAiTyping(false);
+      }
+      console.warn('[useWebSocket Callback Error]:', error);
     },
   };
 
@@ -75,11 +115,16 @@ export function useWebSocket() {
       onAiReply: (d) => callbacksRef.current.onAiReply?.(d),
       onMetricsUpdate: (m) => callbacksRef.current.onMetricsUpdate?.(m),
       onSafetyAlert: (s) => callbacksRef.current.onSafetyAlert?.(s),
+      onError: (e) => callbacksRef.current.onError?.(e),
     });
 
     client.connect();
 
     return () => {
+      if (watchdogTimerRef.current) {
+        clearTimeout(watchdogTimerRef.current);
+        watchdogTimerRef.current = null;
+      }
       client.disconnect();
       clientRef.current = null;
     };
@@ -99,7 +144,12 @@ export function useWebSocket() {
         text || (isVoiceRecording ? '🎤 [Voice message processing...]' : '');
 
       const recentHistory = state.messages
-        .filter((m) => m.sender === 'user' || m.sender === 'assistant')
+        .filter(
+          (m) =>
+            (m.sender === 'user' || m.sender === 'assistant') &&
+            !m.id.startsWith('msg-new-') &&
+            !m.id.startsWith('msg-welcome-')
+        )
         .slice(-6)
         .map((m) => ({ sender: m.sender, content: m.content }));
 
@@ -112,6 +162,8 @@ export function useWebSocket() {
         audioMetrics,
         history: recentHistory,
       });
+
+      lastPromptRef.current = text || (isVoiceRecording ? '🎤 [Voice message]' : '');
 
       console.log(`[useWebSocket] sendMultimodalTurn | text: "${text}" | isVoice: ${isVoiceRecording} | historyTurns: ${recentHistory.length} | audioDataLen: ${audioMetrics?.audio?.length || 0} | payload.audioAttached: ${Boolean(payload.audioFeatures?.audio)}`);
 
@@ -127,17 +179,34 @@ export function useWebSocket() {
       // 2. If WS is connected or connecting, send payload to backend
       const sentViaWs = clientRef.current?.sendMessage(payload);
 
-      if (!sentViaWs) {
+      if (sentViaWs) {
+        // Start 12-second watchdog timer safety net: silently resets isAiTyping if backend stalls
+        if (watchdogTimerRef.current) {
+          clearTimeout(watchdogTimerRef.current);
+        }
+        watchdogTimerRef.current = setTimeout(() => {
+          const currentState = useStressStore.getState();
+          if (currentState.isAiTyping) {
+            console.warn('[useWebSocket] Watchdog safety net triggered (12s limit). Unlocking input bar.');
+            currentState.setAiTyping(false);
+          }
+        }, 12000);
+      } else {
         // Attempt REST API first, then fallback to MockMultimodalService
         try {
           const result = await ApiService.processMultimodalTurn(payload);
 
           state.setAiTyping(false);
+          const finalUserPrompt = result.transcription && result.transcription.trim()
+            ? `🎤 "${result.transcription.trim()}"`
+            : userDisplayContent;
+
           if (result.transcription && result.transcription.trim()) {
             state.updateMessageContent(createdUserMsg.id, `🎤 "${result.transcription.trim()}"`);
           } else if (isVoiceRecording) {
             state.updateMessageContent(createdUserMsg.id, `🎤 [Voice message]`);
           }
+
           state.addMessage({
             sender: 'assistant',
             content: result.reply,
@@ -151,6 +220,15 @@ export function useWebSocket() {
 
           state.updateStressEstimate(result.stress);
           state.updateEmotionProbabilities(result.emotions);
+
+          // Auto-persist turn
+          const topEmotion = Object.keys(result.emotions || {})[0] || 'neutral';
+          ApiService.saveChatTurn({
+            user_message: finalUserPrompt,
+            ai_response: result.reply,
+            detected_emotion: topEmotion,
+            stress_score: (result.stress?.score ?? 35) / 100,
+          }).catch((e) => console.warn('[useWebSocket] REST turn persistence failed:', e));
         } catch (restErr) {
           console.warn('[useWebSocket] REST endpoint failed, falling back to local simulation:', restErr);
           try {
@@ -179,6 +257,15 @@ export function useWebSocket() {
             if (result.safety.isTriggered) {
               state.triggerSafetyProtocol(result.safety);
             }
+
+            // Auto-persist simulated turn
+            const topEmotion = Object.keys(result.emotions || {})[0] || 'neutral';
+            ApiService.saveChatTurn({
+              user_message: userDisplayContent,
+              ai_response: result.reply,
+              detected_emotion: topEmotion,
+              stress_score: (result.stress?.score ?? 35) / 100,
+            }).catch((e) => console.warn('[useWebSocket] Mock turn persistence failed:', e));
           } catch (err) {
             state.setAiTyping(false);
             console.error('[useWebSocket] Fallback pipeline failed:', err);

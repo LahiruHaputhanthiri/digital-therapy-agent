@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { background: #ffffff; }
+body {
+  width: 720pt; height: 405pt; margin: 0; padding: 0;
+  font-family: Arial, sans-serif; display: flex;
+  position: relative; overflow: hidden; background: #F8FAFB;
+}
+.left-bar { position: absolute; top: 0; left: 0; width: 6pt; height: 100%; background: #0D4F4F; }
+.header { position: absolute; top: 12pt; left: 28pt; right: 28pt; border-bottom: 2pt solid #00B4D8; padding-bottom: 4pt; }
+.header h1 { font-size: 24pt; color: #0D4F4F; margin: 0; font-weight: bold; }
+.content {
+  position: absolute; top: 48pt; left: 28pt; right: 28pt; bottom: 20pt;
+  display: flex; flex-direction: column; justify-content: space-between; gap: 5pt;
+}
+.themes-grid { display: flex; gap: 5pt; flex-wrap: wrap; }
+.theme-card {
+  flex: 1; min-width: 145pt; padding: 5pt 7pt;
+  background: #FFFFFF; border-radius: 5pt;
+  border: 1px solid #D0D8DD; border-top: 3pt solid #0D4F4F;
+  box-shadow: 0 1.5pt 3pt rgba(0,0,0,0.03);
+}
+.theme-card.teal { border-top-color: #00B4D8; }
+.theme-card.amber { border-top-color: #F77F00; }
+.theme-card.red { border-top-color: #E74C3C; }
+.theme-num p { font-size: 8pt; color: #777777; font-weight: bold; margin: 0 0 1pt 0; text-transform: uppercase; }
+.theme-card h3 { font-size: 11pt; color: #0D4F4F; margin: 0 0 2pt 0; font-weight: bold; }
+.theme-card p { font-size: 9pt; color: #444444; margin: 0; line-height: 1.25; }
+.theme-card b { color: #111111; }
+
+.gap-container {
+  padding: 5pt 8pt; background: #E6FFFA; border-radius: 5pt;
+  border: 1.5pt solid #00B4D8;
+}
+.gap-header { display: flex; align-items: center; gap: 6pt; margin-bottom: 2pt; }
+.gap-header h2 { font-size: 11pt; color: #0D4F4F; margin: 0; letter-spacing: 0.5pt; text-transform: uppercase; font-weight: bold; }
+.gap-container p { font-size: 9.5pt; color: #234E52; margin: 0; line-height: 1.3; }
+.gap-pills { display: flex; gap: 4pt; margin-top: 3pt; }
+.pill { flex: 1; padding: 2.5pt 4pt; background: #0D4F4F; border-radius: 10pt; text-align: center; }
+.pill p { font-size: 7.8pt; color: #FFFFFF; font-weight: bold; margin: 0; white-space: nowrap; }
+</style>
+</head>
+<body>
+<div class="left-bar"></div>
+<div class="header"><h1>Literature Review &amp; Research Gap</h1></div>
+<div class="content">
+  <div class="themes-grid">
+    <div class="theme-card">
+      <div class="theme-num"><p>01 &bull; UNIMODAL SENSING</p></div>
+      <h3>Environmental Sensitivity</h3>
+      <p>FER is sensitive to <b>lighting &amp; posture</b> (Dinges et al., 2005); SER degrades under <b>ambient noise</b>; text increases <b>friction during panic</b> (Suri et al., 2026).</p>
+    </div>
+    <div class="theme-card teal">
+      <div class="theme-num"><p>02 &bull; SENSOR FUSION</p></div>
+      <h3>Multimodal Fusion</h3>
+      <p>Combining visual and vocal channels enhances stability (Zhang et al., 2022); <b>Late Fusion</b> provides modularity and missing-sensor resilience.</p>
+    </div>
+    <div class="theme-card red">
+      <div class="theme-num"><p>03 &bull; AI GOVERNANCE</p></div>
+      <h3>Conversational AI Safety</h3>
+      <p>Unrestricted LLMs carry <b>hallucination and sycophancy risks</b> in mental health; requires <b>constrained graph workflows</b> (Patel et al., 2026; Voultsiou &amp; Moussiades, 2026).</p>
+    </div>
+    <div class="theme-card amber">
+      <div class="theme-num"><p>04 &bull; LOCALIZATION</p></div>
+      <h3>Multilingual Accessibility</h3>
+      <p>Over <b>90% of affective systems are English-centric</b> (Zhu, 2023), causing performance degradation and exclusion in South Asian (Sinhala/Tamil) contexts.</p>
+    </div>
+  </div>
+
+  <div class="gap-container">
+    <div class="gap-header">
+      <h2>The Identified Research Gap</h2>
+    </div>
+    <p>A critical lack of accessible, low-barrier systems that integrate <b>multimodal affective sensing, native trilingual support, and constrained conversational safety</b> within a unified non-clinical wellness platform.</p>
+    <div class="gap-pills">
+      <div class="pill"><p>Multimodal Sensing (Face + Voice)</p></div>
+      <div class="pill"><p>Trilingual Support (EN / SI / TA)</p></div>
+      <div class="pill"><p>Constrained CBT State Machine</p></div>
+      <div class="pill"><p>Privacy-Conscious Processing</p></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

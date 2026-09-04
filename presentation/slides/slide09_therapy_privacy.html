@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { background: #ffffff; }
+body {
+  width: 720pt; height: 405pt; margin: 0; padding: 0;
+  font-family: Arial, sans-serif; display: flex;
+  position: relative; overflow: hidden; background: #F8FAFB;
+}
+.left-bar { position: absolute; top: 0; left: 0; width: 6pt; height: 100%; background: #0D4F4F; }
+.header { position: absolute; top: 12pt; left: 28pt; right: 28pt; border-bottom: 2pt solid #00B4D8; padding-bottom: 4pt; }
+.header h1 { font-size: 24pt; color: #0D4F4F; margin: 0; font-weight: bold; }
+.content {
+  position: absolute; top: 48pt; left: 28pt; right: 28pt; bottom: 20pt;
+  display: flex; gap: 14pt;
+}
+.col-left { flex: 1.1; display: flex; flex-direction: column; justify-content: space-between; }
+.col-right { flex: 0.9; display: flex; flex-direction: column; gap: 4pt; justify-content: center; }
+.col-right img { width: 100%; max-height: 125pt; object-fit: contain; border-radius: 5pt; border: 1px solid #D0D8DD; box-shadow: 0 2pt 4pt rgba(0,0,0,0.04); }
+.caption { margin-top: 2pt; }
+.caption p { font-size: 9.5pt; color: #555555; text-align: center; margin: 0; font-weight: 500; }
+.pillar-card {
+  padding: 4pt 8pt; background: #FFFFFF; border-radius: 4pt;
+  border: 1px solid #D0D8DD; border-left: 3.5pt solid #0D4F4F;
+}
+.pillar-card.cyan { border-left-color: #00B4D8; }
+.pillar-card.amber { border-left-color: #F77F00; }
+.pillar-card h2 { font-size: 11pt; color: #0D4F4F; margin: 0 0 2pt 0; text-transform: uppercase; letter-spacing: 0.5pt; font-weight: bold; }
+.pillar-card ul { margin: 0; padding-left: 14pt; }
+.pillar-card li { font-size: 9.5pt; color: #333333; margin-bottom: 1.5pt; line-height: 1.25; }
+.pillar-card b { color: #111111; }
+</style>
+</head>
+<body>
+<div class="left-bar"></div>
+<div class="header"><h1>Therapy, Multilingual Support &amp; Privacy</h1></div>
+<div class="content">
+  <div class="col-left">
+    <div class="pillar-card">
+      <h2>1. Constrained CBT Therapy Engine</h2>
+      <ul>
+        <li><b>Empathy-First Rule:</b> Validates feelings before suggesting exercises.</li>
+        <li><b>5-Stage State Machine:</b> Crisis, Coping, Early Listening, Exploration, De-escalation.</li>
+        <li><b>Deterministic Local Fallback:</b> Local rule engine if LLM exceeds 1.5s.</li>
+        <li><b>Strictly Non-Clinical:</b> Guided wellness decompression only.</li>
+      </ul>
+    </div>
+
+    <div class="pillar-card cyan">
+      <h2>2. Trilingual Cultural Localization</h2>
+      <ul>
+        <li>Full native UI scripts &amp; dialogue in <b>English, Sinhala, and Tamil</b>.</li>
+        <li><b>TTS Note:</b> Browser-native TTS; regional Sinhala/Tamil voice availability depends on host browser/OS.</li>
+      </ul>
+    </div>
+
+    <div class="pillar-card amber">
+      <h2>3. Privacy-Conscious Architecture</h2>
+      <ul>
+        <li><b>Temporary In-Memory Processing:</b> Zero server-side raw video saving.</li>
+        <li><b>Local Privacy Masking:</b> Client-side Gaussian blur for camera feed.</li>
+        <li><b>User-Scoped Storage:</b> Isolated SQLite chat records with GDPR purge.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="col-right">
+    <div>
+      <img src="img/EVID-SS-003_therapy_interface.png">
+      <div class="caption"><p>Figure 6: Guided CBT Therapy Workspace (EVID-SS-003)</p></div>
+    </div>
+    <div>
+      <img src="img/EVID-SS-130_privacy_settings.png">
+      <div class="caption"><p>Figure 7: Privacy Settings &amp; Sensor Permissions (EVID-SS-130)</p></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

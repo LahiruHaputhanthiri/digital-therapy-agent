@@ -5,6 +5,7 @@ Digital Therapeutics supporting Trilingual interaction (English, Sinhala, & Tami
 with integrated WebM/Opus-to-WAV Speech-to-Text (STT) and Empathy-First CBT Agent.
 """
 
+import asyncio
 import base64
 from datetime import datetime, timezone
 import io
@@ -15,7 +16,7 @@ import sys
 import time
 import traceback
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Generator, List, Optional, Tuple
 
 # Multimedia, Audio, STT & Machine Learning Libraries
 import av
@@ -37,12 +38,27 @@ if sys.platform == "win32":
 from dotenv import load_dotenv
 import edge_tts
 from gtts import gTTS
-from fastapi import Body, FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
+from fastapi import Body, Depends, FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
 
 from agent.therapy_bot import TherapyBot
+from auth import (
+    ADMIN_SECRET_KEY,
+    SUPER_ADMIN_SECRET_KEY,
+    create_access_token,
+    get_current_active_user,
+    get_current_admin_user,
+    get_current_super_admin,
+    get_current_user,
+    get_password_hash,
+    verify_google_id_token,
+    verify_password,
+)
+from database import Base, SessionLocal, engine, get_db
+import models
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 1. Environment & Model Discovery
@@ -363,7 +379,10 @@ async def transcribe_audio(
             "data": audio_bytes,
         }
 
-        res = await stt_gen_model.generate_content_async([audio_part, prompt])
+        res = await asyncio.wait_for(
+            stt_gen_model.generate_content_async([audio_part, prompt]),
+            timeout=1.5
+        )
         stt_elapsed = time.perf_counter() - stt_start_time
 
         if not res or not res.text:
@@ -730,7 +749,7 @@ async def process_multimodal_therapy(request_data: Dict[str, Any]) -> Dict[str, 
     face_info: Optional[Dict[str, Any]] = None
     if face_image:
         try:
-            face_info = predict_face_emotion(face_image)
+            face_info = await asyncio.to_thread(predict_face_emotion, face_image)
         except Exception as e:
             print(f"[FACE Error] Face prediction failed: {e}", flush=True)
     elif face_emotion_input:
@@ -748,7 +767,7 @@ async def process_multimodal_therapy(request_data: Dict[str, Any]) -> Dict[str, 
     voice_info: Optional[Dict[str, Any]] = None
     if voice_audio or voice_features:
         try:
-            voice_info = predict_voice_emotion(voice_audio or voice_features)
+            voice_info = await asyncio.to_thread(predict_voice_emotion, voice_audio or voice_features)
         except Exception as e:
             print(f"[VOICE Error] Voice prediction failed: {e}", flush=True)
     elif voice_emotion_input:
@@ -881,11 +900,30 @@ async def process_multimodal_therapy(request_data: Dict[str, Any]) -> Dict[str, 
 # ─────────────────────────────────────────────────────────────────────────────
 # 6. FastAPI App & CORS Setup
 # ─────────────────────────────────────────────────────────────────────────────
+# Ensure database schema is created on application bootstrap
+Base.metadata.create_all(bind=engine)
+
 app = FastAPI(
     title="MindCare Multimodal Therapy API",
-    description="Unified Multimodal Emotion-Aware Digital Therapy Assistant Backend.",
-    version="0.5.1",
+    description="Unified Multimodal Emotion-Aware Digital Therapy Assistant Backend with RBAC.",
+    version="0.6.0",
 )
+
+@app.on_event("startup")
+def on_startup() -> None:
+    """Initialize database tables and perform lightweight schema migrations."""
+    Base.metadata.create_all(bind=engine)
+    try:
+        with engine.connect() as conn:
+            cursor = conn.exec_driver_sql("PRAGMA table_info(users);")
+            columns = [row[1] for row in cursor.fetchall()]
+            if "avatar" not in columns and len(columns) > 0:
+                conn.exec_driver_sql("ALTER TABLE users ADD COLUMN avatar VARCHAR;")
+                conn.commit()
+                print("[DATABASE] Migrated users table: added 'avatar' column.", flush=True)
+    except Exception as migration_err:
+        print(f"[DATABASE] Schema migration check: {migration_err}", flush=True)
+    print("[DATABASE] SQLite database tables initialized successfully.", flush=True)
 
 app.add_middleware(
     CORSMiddleware,
@@ -906,6 +944,90 @@ app.add_middleware(
 # 7. Request & Response Schemas
 # ─────────────────────────────────────────────────────────────────────────────
 
+# --- Authentication & User Schemas ---
+class UserRegisterRequest(BaseModel):
+    """Payload schema for user registration."""
+    username: str = Field(..., min_length=2, max_length=100, description="Display username")
+    email: str = Field(..., description="User email address")
+    password: str = Field(..., min_length=6, description="Raw password string (min 6 characters)")
+    role: Optional[str] = Field(default="user", description="Target role: 'user', 'admin', or 'super_admin'")
+    admin_secret: Optional[str] = Field(default=None, description="Secret required for registering 'admin' or 'super_admin' role")
+
+
+class UserUpdateRequest(BaseModel):
+    """Payload schema for updating user profile."""
+    username: Optional[str] = Field(default=None, min_length=2, max_length=100, description="Updated display username")
+    password: Optional[str] = Field(default=None, min_length=6, description="New password string (min 6 characters)")
+    avatar: Optional[str] = Field(default=None, description="Base64 encoded avatar image dataURL or URL")
+
+
+class CreateAdminRequest(BaseModel):
+    """Payload schema for Super Admin to provision Admin or Super Admin accounts."""
+    username: str = Field(..., min_length=2, max_length=100, description="Display username")
+    email: str = Field(..., description="Admin email address")
+    password: str = Field(..., min_length=6, description="Raw password string (min 6 characters)")
+    role: Optional[str] = Field(default="admin", description="Target role: 'admin' or 'super_admin'")
+
+
+class SystemStatsResponse(BaseModel):
+    """System-wide telemetry and platform metrics schema for Super Admin."""
+    status: str = "healthy"
+    total_users: int
+    total_chat_logs: int
+    users_by_role: Dict[str, int]
+    models_status: Dict[str, bool]
+    timestamp: str
+
+
+class UserLoginRequest(BaseModel):
+    """Payload schema for JSON-based login."""
+    email: str = Field(..., description="User email address")
+    password: str = Field(..., description="Raw password string")
+
+
+class GoogleLoginRequest(BaseModel):
+    """Payload schema for Google OAuth 2.0 credential verification."""
+    credential: str = Field(..., description="Google ID Token JWT string returned by Sign in with Google")
+
+
+class UserProfileResponse(BaseModel):
+    """Public user profile response representation."""
+    id: int
+    username: str
+    email: str
+    role: str
+    avatar: Optional[str] = None
+
+
+class AuthTokenResponse(BaseModel):
+    """Authentication token response schema."""
+    access_token: str
+    token_type: str = "bearer"
+    user: UserProfileResponse
+
+
+# --- Chat & Telemetry Persistence Schemas ---
+class SaveChatTurnRequest(BaseModel):
+    """Payload schema for saving a completed chat turn."""
+    user_message: str = Field(..., description="User's input text or speech transcription")
+    ai_response: str = Field(..., description="CBT therapy bot response")
+    detected_emotion: Optional[str] = Field(default="neutral", description="Detected or fused emotion")
+    stress_score: Optional[float] = Field(default=0.35, description="Non-clinical stress score (0.0 - 1.0)")
+    session_id: Optional[str] = Field(default=None, description="Optional session tracking ID")
+
+
+class ChatLogItemResponse(BaseModel):
+    """Serialized ChatLog record."""
+    id: int
+    user_id: int
+    timestamp: str
+    user_message: Optional[str]
+    ai_response: Optional[str]
+    detected_emotion: Optional[str]
+    stress_score: Optional[float]
+
+
+# --- Therapy Schemas ---
 class HealthStatusResponse(BaseModel):
     status: str
     service: str
@@ -957,7 +1079,508 @@ class MultimodalChatResponse(BaseModel):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 8. Canonical REST Endpoint (POST /api/v1/therapy/multimodal-chat)
+# 8. Authentication & RBAC REST Endpoints
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.post(
+    "/api/v1/auth/register",
+    response_model=UserProfileResponse,
+    status_code=201,
+    summary="Register a new user account",
+    tags=["Authentication"],
+)
+async def register_user(
+    request: UserRegisterRequest,
+    db: Session = Depends(get_db),
+) -> UserProfileResponse:
+    """Register a new user with hashed password and role assignment.
+
+    Supports 'user', 'admin', and 'super_admin' roles. Registering an administrative role
+    requires an appropriate secret key or system bootstrap eligibility.
+    """
+    clean_email = request.email.strip().lower()
+    clean_username = request.username.strip()
+    requested_role = (request.role or models.UserRole.USER).strip().lower()
+
+    if requested_role not in models.UserRole.ALL_ROLES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid role '{requested_role}'. Must be one of: {', '.join(models.UserRole.ALL_ROLES)}.",
+        )
+
+    # Check for existing email collision
+    existing_user = db.query(models.User).filter(models.User.email == clean_email).first()
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A user with this email address is already registered.",
+        )
+
+    # RBAC Role resolution & privilege verification
+    if requested_role == models.UserRole.SUPER_ADMIN:
+        total_super_admins = db.query(models.User).filter(models.User.role == models.UserRole.SUPER_ADMIN).count()
+        if total_super_admins > 0 and request.admin_secret != SUPER_ADMIN_SECRET_KEY:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Invalid super administrative secret key provided.",
+            )
+        assigned_role = models.UserRole.SUPER_ADMIN
+    elif requested_role == models.UserRole.ADMIN:
+        total_privileged = db.query(models.User).filter(models.User.role.in_([models.UserRole.ADMIN, models.UserRole.SUPER_ADMIN])).count()
+        if total_privileged > 0 and request.admin_secret not in [ADMIN_SECRET_KEY, SUPER_ADMIN_SECRET_KEY]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Invalid administrative secret key provided.",
+            )
+        assigned_role = models.UserRole.ADMIN
+    else:
+        assigned_role = models.UserRole.USER
+
+    # Hash password securely with bcrypt
+    hashed_pwd = get_password_hash(request.password)
+
+    new_user = models.User(
+        username=clean_username,
+        email=clean_email,
+        password_hash=hashed_pwd,
+        role=assigned_role,
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
+    print(f"[AUTH] New user registered: '{new_user.username}' ({new_user.email}) with role '{new_user.role}'", flush=True)
+
+    return UserProfileResponse(
+        id=new_user.id,
+        username=new_user.username,
+        email=new_user.email,
+        role=new_user.role,
+        avatar=new_user.avatar,
+    )
+
+
+@app.post(
+    "/api/v1/auth/login",
+    response_model=AuthTokenResponse,
+    summary="Authenticate user and obtain JWT token",
+    tags=["Authentication"],
+)
+async def login_user(
+    credentials: UserLoginRequest,
+    db: Session = Depends(get_db),
+) -> AuthTokenResponse:
+    """Authenticate user credentials and return a signed JWT Bearer token with profile details."""
+    clean_email = credentials.email.strip().lower()
+    user = db.query(models.User).filter(models.User.email == clean_email).first()
+
+    if not user or not verify_password(credentials.password, user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Issue JWT token containing identity claims
+    token = create_access_token(
+        data={
+            "sub": user.email,
+            "user_id": user.id,
+            "username": user.username,
+            "role": user.role,
+        }
+    )
+
+    print(f"[AUTH] User login successful: '{user.username}' ({user.email}) [{user.role}]", flush=True)
+
+    return AuthTokenResponse(
+        access_token=token,
+        token_type="bearer",
+        user=UserProfileResponse(
+            id=user.id,
+            username=user.username,
+            email=user.email,
+            role=user.role,
+            avatar=user.avatar,
+        ),
+    )
+
+
+@app.post(
+    "/api/v1/auth/google",
+    response_model=AuthTokenResponse,
+    summary="Authenticate or auto-register user via Google OAuth 2.0 ID Token",
+    tags=["Authentication"],
+)
+async def google_auth_login(
+    payload: GoogleLoginRequest,
+    db: Session = Depends(get_db),
+) -> AuthTokenResponse:
+    """Verify Google OAuth 2.0 credential, auto-provision user if new, and issue a local JWT."""
+    if not payload.credential or not payload.credential.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Google credential token is required.",
+        )
+
+    try:
+        id_info = verify_google_id_token(payload.credential.strip())
+    except ValueError as e:
+        print(f"[AUTH] Google token verification failed: {e}", flush=True)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Invalid or expired Google OAuth credential token: {str(e)}",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    except Exception as e:
+        print(f"[AUTH] Unexpected error verifying Google token: {e}", flush=True)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Failed to verify Google authentication token.",
+        )
+
+    email = id_info.get("email")
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Google account payload does not contain a verified email address.",
+        )
+
+    clean_email = email.strip().lower()
+    user = db.query(models.User).filter(models.User.email == clean_email).first()
+
+    name = id_info.get("name") or clean_email.split("@")[0]
+    picture = id_info.get("picture")
+
+    if not user:
+        # Auto-provision new account with random secure password hash and default 'user' role
+        import secrets
+        random_pwd = secrets.token_urlsafe(32)
+        hashed_pwd = get_password_hash(random_pwd)
+
+        user = models.User(
+            username=name.strip(),
+            email=clean_email,
+            password_hash=hashed_pwd,
+            role=models.UserRole.USER,
+            avatar=picture,
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        print(f"[AUTH] Google OAuth: New user auto-registered: '{user.username}' ({user.email})", flush=True)
+    else:
+        # Existing user - update avatar if user doesn't already have one
+        if picture and not user.avatar:
+            user.avatar = picture
+            db.commit()
+            db.refresh(user)
+        print(f"[AUTH] Google OAuth: User login successful: '{user.username}' ({user.email}) [{user.role}]", flush=True)
+
+    # Issue local JWT token containing identity claims
+    token = create_access_token(
+        data={
+            "sub": user.email,
+            "user_id": user.id,
+            "username": user.username,
+            "role": user.role,
+        }
+    )
+
+    return AuthTokenResponse(
+        access_token=token,
+        token_type="bearer",
+        user=UserProfileResponse(
+            id=user.id,
+            username=user.username,
+            email=user.email,
+            role=user.role,
+            avatar=user.avatar,
+        ),
+    )
+
+
+@app.get(
+    "/api/v1/auth/me",
+    response_model=UserProfileResponse,
+    summary="Retrieve current logged-in user profile",
+    tags=["Authentication"],
+)
+async def get_current_user_profile(
+    current_user: models.User = Depends(get_current_active_user),
+) -> UserProfileResponse:
+    """Protected endpoint returning the profile and role of the currently authenticated user."""
+    return UserProfileResponse(
+        id=current_user.id,
+        username=current_user.username,
+        email=current_user.email,
+        role=current_user.role,
+        avatar=current_user.avatar,
+    )
+
+
+@app.put(
+    "/api/v1/auth/me",
+    response_model=UserProfileResponse,
+    summary="Update current logged-in user profile",
+    tags=["Authentication"],
+)
+async def update_current_user_profile(
+    payload: UserUpdateRequest,
+    current_user: models.User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+) -> UserProfileResponse:
+    """Update profile information (username, password, avatar) for authenticated user."""
+    if payload.username is not None:
+        clean_name = payload.username.strip()
+        if len(clean_name) >= 2:
+            current_user.username = clean_name
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Username must be at least 2 characters long.",
+            )
+
+    if payload.password is not None and payload.password.strip():
+        if len(payload.password) < 6:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Password must be at least 6 characters long.",
+            )
+        current_user.password_hash = get_password_hash(payload.password)
+
+    if payload.avatar is not None:
+        current_user.avatar = payload.avatar
+
+    db.commit()
+    db.refresh(current_user)
+
+    print(f"[AUTH] User profile updated for '{current_user.username}' ({current_user.email})", flush=True)
+
+    return UserProfileResponse(
+        id=current_user.id,
+        username=current_user.username,
+        email=current_user.email,
+        role=current_user.role,
+        avatar=current_user.avatar,
+    )
+
+
+@app.delete(
+    "/api/v1/auth/me",
+    summary="Delete current user account and associated chat history",
+    tags=["Authentication"],
+)
+async def delete_current_user_account(
+    current_user: models.User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+) -> Dict[str, str]:
+    """Permanently delete authenticated user account and associated chat telemetry logs."""
+    user_id = current_user.id
+    user_email = current_user.email
+
+    db.query(models.ChatLog).filter(models.ChatLog.user_id == user_id).delete(synchronize_session=False)
+    db.delete(current_user)
+    db.commit()
+
+    print(f"[AUTH] User account deleted: '{user_email}' (id={user_id})", flush=True)
+
+    return {
+        "status": "success",
+        "message": "User account and all associated telemetry have been successfully deleted.",
+    }
+
+
+@app.get(
+    "/api/v1/auth/admin/users",
+    response_model=List[UserProfileResponse],
+    summary="List all registered users (Admin or Super Admin)",
+    tags=["Admin"],
+)
+async def list_all_users_admin(
+    admin_user: models.User = Depends(get_current_admin_user),
+    db: Session = Depends(get_db),
+) -> List[UserProfileResponse]:
+    """Admin and Super Admin protected endpoint to retrieve all registered accounts and roles."""
+    users = db.query(models.User).order_by(models.User.id.asc()).all()
+    return [
+        UserProfileResponse(
+            id=u.id,
+            username=u.username,
+            email=u.email,
+            role=u.role,
+            avatar=u.avatar,
+        )
+        for u in users
+    ]
+
+
+@app.post(
+    "/api/v1/admin/create-admin",
+    response_model=UserProfileResponse,
+    status_code=201,
+    summary="Provision a new Admin or Super Admin account (Super Admin only)",
+    tags=["Super Admin"],
+)
+async def create_admin_account(
+    payload: CreateAdminRequest,
+    super_admin: models.User = Depends(get_current_super_admin),
+    db: Session = Depends(get_db),
+) -> UserProfileResponse:
+    """Exclusive Super Admin endpoint to register a new administrator."""
+    clean_email = payload.email.strip().lower()
+    clean_username = payload.username.strip()
+    target_role = (payload.role or models.UserRole.ADMIN).strip().lower()
+
+    if target_role not in [models.UserRole.ADMIN, models.UserRole.SUPER_ADMIN]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid administrative role '{target_role}'. Must be 'admin' or 'super_admin'.",
+        )
+
+    existing_user = db.query(models.User).filter(models.User.email == clean_email).first()
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A user with this email address is already registered.",
+        )
+
+    hashed_pwd = get_password_hash(payload.password)
+    new_admin = models.User(
+        username=clean_username,
+        email=clean_email,
+        password_hash=hashed_pwd,
+        role=target_role,
+    )
+    db.add(new_admin)
+    db.commit()
+    db.refresh(new_admin)
+
+    print(f"[SUPER_ADMIN] Admin provisioned: '{new_admin.username}' ({new_admin.email}) [{new_admin.role}] by '{super_admin.username}'", flush=True)
+
+    return UserProfileResponse(
+        id=new_admin.id,
+        username=new_admin.username,
+        email=new_admin.email,
+        role=new_admin.role,
+        avatar=new_admin.avatar,
+    )
+
+
+@app.get(
+    "/api/v1/super-admin/system-stats",
+    response_model=SystemStatsResponse,
+    summary="Retrieve platform system telemetry and stats (Super Admin only)",
+    tags=["Super Admin"],
+)
+async def get_system_stats(
+    super_admin: models.User = Depends(get_current_super_admin),
+    db: Session = Depends(get_db),
+) -> SystemStatsResponse:
+    """Exclusive Super Admin endpoint returning platform health, user statistics, and AI model readiness."""
+    total_users = db.query(models.User).count()
+    total_chat_logs = db.query(models.ChatLog).count()
+
+    role_breakdown = {
+        models.UserRole.USER: db.query(models.User).filter(models.User.role == models.UserRole.USER).count(),
+        models.UserRole.ADMIN: db.query(models.User).filter(models.User.role == models.UserRole.ADMIN).count(),
+        models.UserRole.SUPER_ADMIN: db.query(models.User).filter(models.User.role == models.UserRole.SUPER_ADMIN).count(),
+    }
+
+    models_status = {
+        "face_model": face_model is not None,
+        "voice_model": voice_model is not None,
+        "voice_scaler": voice_scaler is not None,
+        "health_model": health_model is not None,
+        "therapy_bot": therapy_bot is not None,
+    }
+
+    return SystemStatsResponse(
+        status="healthy",
+        total_users=total_users,
+        total_chat_logs=total_chat_logs,
+        users_by_role=role_breakdown,
+        models_status=models_status,
+        timestamp=datetime.now(timezone.utc).isoformat(),
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 8.2. Chat & Telemetry Persistence REST Endpoints
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.post(
+    "/api/v1/chat/save",
+    response_model=ChatLogItemResponse,
+    status_code=201,
+    summary="Save a completed multimodal chat turn",
+    tags=["Chat & Telemetry"],
+)
+async def save_chat_turn(
+    request: SaveChatTurnRequest,
+    current_user: models.User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+) -> ChatLogItemResponse:
+    """Persist completed user message, emotion telemetry, and CBT bot response to SQLite database."""
+    new_log = models.ChatLog(
+        user_id=current_user.id,
+        timestamp=datetime.now(timezone.utc),
+        user_message=request.user_message,
+        ai_response=request.ai_response,
+        detected_emotion=request.detected_emotion or "neutral",
+        stress_score=float(request.stress_score) if request.stress_score is not None else 0.35,
+    )
+    db.add(new_log)
+    db.commit()
+    db.refresh(new_log)
+
+    print(f"[CHAT_PERSISTENCE] Saved turn #{new_log.id} for user '{current_user.username}' (Emotion: {new_log.detected_emotion}, Stress: {new_log.stress_score})", flush=True)
+
+    return ChatLogItemResponse(
+        id=new_log.id,
+        user_id=new_log.user_id,
+        timestamp=new_log.timestamp.isoformat() if new_log.timestamp else datetime.now(timezone.utc).isoformat(),
+        user_message=new_log.user_message,
+        ai_response=new_log.ai_response,
+        detected_emotion=new_log.detected_emotion,
+        stress_score=new_log.stress_score,
+    )
+
+
+@app.get(
+    "/api/v1/chat/history",
+    response_model=List[ChatLogItemResponse],
+    summary="Fetch chat history for authenticated user",
+    tags=["Chat & Telemetry"],
+)
+async def get_user_chat_history(
+    current_user: models.User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+) -> List[ChatLogItemResponse]:
+    """Retrieve all historical chat turns and telemetry associated with the current user."""
+    logs = (
+        db.query(models.ChatLog)
+        .filter(models.ChatLog.user_id == current_user.id)
+        .order_by(models.ChatLog.timestamp.asc())
+        .all()
+    )
+
+    return [
+        ChatLogItemResponse(
+            id=log.id,
+            user_id=log.user_id,
+            timestamp=log.timestamp.isoformat() if log.timestamp else datetime.now(timezone.utc).isoformat(),
+            user_message=log.user_message,
+            ai_response=log.ai_response,
+            detected_emotion=log.detected_emotion,
+            stress_score=log.stress_score,
+        )
+        for log in logs
+    ]
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 9. Canonical REST Endpoint (POST /api/v1/therapy/multimodal-chat)
 # ─────────────────────────────────────────────────────────────────────────────
 
 @app.post(
@@ -1022,10 +1645,11 @@ async def canonical_websocket_stream_endpoint(websocket: WebSocket) -> None:
                 payload: Dict[str, Any] = json.loads(raw_text)
             except (json.JSONDecodeError, ValueError) as json_err:
                 print(f"[WebSocket Warning] Invalid JSON: {json_err}", flush=True)
-                await websocket.send_json({"type": "error", "message": "Invalid JSON payload."})
+                await websocket.send_json({"type": "ERROR", "message": "Invalid JSON payload."})
                 continue
 
-            if payload.get("type") == "PING":
+            msg_type = str(payload.get("type") or "").upper()
+            if msg_type == "PING":
                 await websocket.send_json({"type": "PONG"})
                 continue
 

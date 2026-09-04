@@ -15,3 +15,9 @@ numpy
 scikit-learn
 gtts
 edge-tts
+sqlalchemy
+passlib[bcrypt]
+bcrypt
+python-jose[cryptography]
+python-multipart
+google-auth

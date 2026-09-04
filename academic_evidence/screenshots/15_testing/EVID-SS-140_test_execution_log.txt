@@ -1,0 +1,59 @@
+=== MINDCARE AUTOMATED TEST SUITE EXECUTION ===
+Exit Code: 0
+
+STDOUT:
+[TherapyBot] gemini-3.7-flash initialized successfully (Therapy & Multimodal STT).
+SUCCESS: Face emotion model loaded successfully from best_face_model_v2.h5.
+SUCCESS: Voice emotion model loaded successfully from best_voice_model_v2.h5.
+SUCCESS: Voice MFCC scaler loaded successfully from voice_scaler_v2.pkl.
+SUCCESS: Health/stress model loaded successfully from best_health_model_v2.pkl.
+==================================================
+Starting MindCare 3-Tier RBAC & DB Test Suite
+==================================================
+ [1] Database tables initialized.
+[AUTH] New user registered: 'AliceUser' (alice@example.com) with role 'user'
+ [2] Standard user registered: ID=1 (role=user)
+[AUTH] New user registered: 'RootSuperAdmin' (root@example.com) with role 'super_admin'
+ [3] Super Admin bootstrapped: ID=2 (role=super_admin)
+[AUTH] New user registered: 'BobAdmin' (bob@example.com) with role 'admin'
+ [4] Admin registered: ID=3 (role=admin)
+ [5] Unauthorized super_admin escalation blocked (HTTP 403).
+[AUTH] User login successful: 'AliceUser' (alice@example.com) [user]
+[AUTH] User login successful: 'BobAdmin' (bob@example.com) [admin]
+[AUTH] User login successful: 'RootSuperAdmin' (root@example.com) [super_admin]
+ [6] JWT tokens generated for User, Admin, and Super Admin.
+ [7] /api/v1/auth/me resolved correct identity for all 3 tiers.
+ [8] RBAC Guard verified on /api/v1/auth/admin/users (User=403, Admin=200, SuperAdmin=200).
+[SUPER_ADMIN] Admin provisioned: 'CharlieAdmin' (charlie@example.com) [admin] by 'RootSuperAdmin'
+ [9] RBAC Guard verified on POST /api/v1/admin/create-admin (User=403, Admin=403, SuperAdmin=201).
+ [10] RBAC Guard verified on GET /api/v1/super-admin/system-stats (Total users=4, stats={'user': 1, 'admin': 2, 'super_admin': 1}).
+ [11] ChatLog telemetry turn logged and verified for user via ORM.
+[CHAT_PERSISTENCE] Saved turn #2 for user 'AliceUser' (Emotion: sadness, Stress: 0.65)
+ [12] POST /api/v1/chat/save persisted turn #2 under user 'AliceUser'.
+ [13] GET /api/v1/chat/history verified user isolation (User turns: 2, Admin turns: 0).
+
+ALL 13 RBAC, CHAT-PERSISTENCE, & DATABASE TESTS PASSED WITH 100% SUCCESS!
+==================================================
+
+STDERR:
+D:\ICBT\Final\digital-therapy-agent\backend\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient as TestClient  # noqa
+D:\ICBT\Final\digital-therapy-agent\backend\.venv\Lib\site-packages\pydub\utils.py:170: RuntimeWarning: Couldn't find ffmpeg or avconv - defaulting to ffmpeg, but may not work
+  warn("Couldn't find ffmpeg or avconv - defaulting to ffmpeg, but may not work", RuntimeWarning)
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1788030235.594226   30048 port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1788030244.965230   30048 port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+D:\ICBT\Final\digital-therapy-agent\backend\agent\therapy_bot.py:18: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+I0000 00:00:1788030260.632461   30048 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: SSE3 SSE4.1 SSE4.2 AVX AVX2 AVX_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+WARNING:absl:Compiled the loaded model, but the compiled metrics have yet to be built. `model.compile_metrics` will be empty until you train or evaluate the model.
+WARNING:absl:Compiled the loaded model, but the compiled metrics have yet to be built. `model.compile_metrics` will be empty until you train or evaluate the model.

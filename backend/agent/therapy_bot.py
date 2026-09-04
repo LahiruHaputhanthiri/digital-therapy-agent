@@ -5,17 +5,26 @@ therapy assistant powered by Google Gemini 1.5. Emphasizes warm empathy-first va
 psychological safety, non-clinical wellness support, and user agency.
 """
 
+import asyncio
 from enum import Enum
 import json
 import os
+from pathlib import Path
 import re
 import warnings
 from typing import Any, Dict, Optional
 
+from dotenv import load_dotenv
+import google.generativeai as genai
+
 # Suppress deprecation notice from google.generativeai package
 warnings.filterwarnings("ignore", category=FutureWarning)
 
-import google.generativeai as genai
+# Load environment variables from backend/.env
+BASE_DIR = Path(__file__).resolve().parent.parent
+env_path = BASE_DIR / ".env"
+load_dotenv(dotenv_path=env_path)
+load_dotenv()
 
 
 class ConversationStage(str, Enum):
@@ -100,7 +109,7 @@ class TherapyBot:
         if self.api_key and self.api_key.strip():
             try:
                 genai.configure(api_key=self.api_key.strip())
-                candidate_models = ["gemini-3.6-flash", "gemini-flash-latest", "gemini-1.5-flash"]
+                candidate_models = ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-flash-latest"]
                 configured_model_name = None
 
                 for candidate in candidate_models:
@@ -249,7 +258,10 @@ class TherapyBot:
 
                 combined_prompt = "\n".join(prompt_parts)
 
-                response = await self.model.generate_content_async(combined_prompt)
+                response = await asyncio.wait_for(
+                    self.model.generate_content_async(combined_prompt),
+                    timeout=1.5
+                )
 
                 if response and response.text:
                     parsed: Dict[str, Any] = json.loads(response.text.strip())
@@ -260,7 +272,7 @@ class TherapyBot:
                         "stage": stage.value,
                     }
             except Exception as err:
-                print(f"[TherapyBot Error] Gemini generation failed: {err}. Falling back to resilient local response.")
+                print(f"[TherapyBot Performance Notice] Gemini generation timed out or failed ({err}). Instant sub-second fallback activated.", flush=True)
 
         # 2. Resilient Rule-Based Fallback (when API key is unset or offline)
         fallback_res = self._generate_fallback_response(message, effective_language, stage, multimodal_data, chat_history)
